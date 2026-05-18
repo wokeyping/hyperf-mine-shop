@@ -1,0 +1,58 @@
+{
+    "name": "hyperf/crontab",
+    "description": "A crontab component for Hyperf.",
+    "license": "MIT",
+    "keywords": [
+        "php",
+        "swoole",
+        "hyperf",
+        "crontab"
+    ],
+    "homepage": "https://hyperf.io",
+    "support": {
+        "issues": "https://github.com/hyperf/hyperf/issues",
+        "source": "https://github.com/hyperf/hyperf",
+        "docs": "https://hyperf.wiki",
+        "pull-request": "https://github.com/hyperf/hyperf/pulls"
+    },
+    "require": {
+        "php": ">=8.1",
+        "hyperf/collection": "~3.1.0",
+        "hyperf/conditionable": "~3.1.0",
+        "hyperf/context": "~3.1.0",
+        "hyperf/contract": "~3.1.0",
+        "hyperf/coordinator": "~3.1.0",
+        "hyperf/coroutine": "~3.1.0",
+        "hyperf/engine": "^2.0",
+        "hyperf/framework": "~3.1.0",
+        "hyperf/stringable": "~3.1.0",
+        "hyperf/support": "~3.1.0",
+        "hyperf/tappable": "~3.1.0",
+        "nesbot/carbon": "^2.0"
+    },
+    "suggest": {
+        "hyperf/command": "Required to use command trigger.",
+        "hyperf/process": "Auto register the Crontab process for server."
+    },
+    "autoload": {
+        "psr-4": {
+            "Hyperf\\Crontab\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "HyperfTest\\Crontab\\": "tests/"
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "extra": {
+        "branch-alias": {
+            "dev-master": "3.1-dev"
+        },
+        "hyperf": {
+            "config": "Hyperf\\Crontab\\ConfigProvider"
+        }
+    }
+}
