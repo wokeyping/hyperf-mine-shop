@@ -39,7 +39,11 @@ services:
       TZ: Asia/Shanghai
 
   hyperf:
-    image: hyperf/hyperf:8.3-alpine-vedge-swoole-v6.1
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: dev
+    image: mineshop-hyperf:dev
     volumes:
       - ./:/www
     working_dir: /www

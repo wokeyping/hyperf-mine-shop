@@ -1,4 +1,4 @@
-FROM hyperf/hyperf:8.3-alpine-vedge-swoole-v6.1
+FROM hyperf/hyperf:8.3-alpine-vedge-swoole-v6.1 AS base
 LABEL maintainer="MineManage Developers <group@stye.cn>" version="1.0" license="MIT" app.name="MineManage"
 
 ##
@@ -47,8 +47,8 @@ RUN set -ex && \
     && apk add --no-cache libstdc++ openssl git bash autoconf pcre2-dev zlib-dev re2c gcc g++ make \
     php83-pear php83-dev php83-tokenizer php83-fileinfo php83-simplexml php83-xmlwriter \
     && apk add --no-cache --virtual .build-deps $PHPIZE_DEPS zlib-dev libaio-dev openssl-dev curl-dev  c-ares-dev \
-    && pecl channel-update pecl.php.net \
-    && pecl install --configureoptions 'enable-reader="yes"' xlswriter \
+    && pecl83 channel-update pecl.php.net \
+    && pecl83 install --configureoptions 'enable-reader="yes"' xlswriter \
     && echo "extension=xlswriter.so" >> /etc/php83/conf.d/60-xlswriter.ini \
     && php -m \
     && php -v \
@@ -61,6 +61,12 @@ RUN set -ex && \
 
 ENV LD_PRELOAD /usr/lib/preloadable_libiconv.so
 
+# 本地开发：docker compose 使用 target: dev
+FROM base AS dev
+WORKDIR /www
+
+# 生产部署：docker build --target prod
+FROM base AS prod
 WORKDIR /opt/www
 
 COPY . /opt/www
