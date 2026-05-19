@@ -15,7 +15,6 @@
 ---
 
 ## 一、通用约定
-
 ### 1.1 统一响应结构
 
 除微信支付回调等少数接口外，JSON 接口均返回：
@@ -52,7 +51,6 @@
   }
 }
 ```
-
 ### 1.3 鉴权
 
 | 项 | 说明 |
@@ -73,16 +71,16 @@
 签名原文（换行拼接）：`METHOD\nPATH\nQUERY\nTIMESTAMP\nNONCE\nBODY_SHA256\nCLIENT_ID`
 
 小程序/H5 实现可参考：`miniprogram/src/services/_utils/signature.ts`。
-
 ### 1.4 参数命名
 
 - HTTP JSON 建议使用 **snake_case**（如 `order_no`）；小程序客户端会自动做驼峰 ↔ 蛇形转换。
 - GET 查询参数、POST JSON Body 均可能使用；路径参数见各接口路径中的 `{id}`、`{orderNo}` 等。
 
 ---
-## 二、C 端 Api 接口（`/api/v1`）
+## 二、接口列表（`/api/v1`）
 
 ### 2.1 接口总览
+
 | 方法 | 路径 | 控制器方法 | 请求类/参数 | 响应 `data` |
 |------|------|------------|-------------|-------------|
 | GET | `/api/v1/after-sales` | index | — | list[] + pagination |
@@ -548,7 +546,6 @@ Body: `{ "order_no": "..." }`
 | POST | `/api/v1/payment/wechat/pay-notify` | 微信回调 | 非标准 Result，返回微信要求格式 |
 | POST | `/api/v1/payment/wechat/refund-notify` | 退款回调 | 同上 |
 
----
 ---
 
 ## 三、如何查更细的字段

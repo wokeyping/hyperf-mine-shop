@@ -14,10 +14,9 @@
 ---
 
 ## 一、通用约定
-
 ### 1.1 统一响应结构
 
-除少数回调外，JSON 接口均返回：
+除微信支付回调等少数接口外，JSON 接口均返回：
 
 ```json
 {
@@ -30,7 +29,7 @@
 | code | 含义 |
 |------|------|
 | 200 | 成功 |
-| 401 | 未授权 |
+| 401 | 未授权（Token/签名无效） |
 | 403 | 无权限 |
 | 404 | 资源不存在 |
 | 422 | 参数校验失败 |
@@ -51,7 +50,6 @@
   }
 }
 ```
-
 部分列表使用 MineAdmin 约定，也可能在 `data` 中直接返回 `items` + `pageInfo`，以实际接口为准。
 
 ### 1.3 鉴权
@@ -71,20 +69,18 @@
 | password | string | 是 | 密码 |
 
 **登录成功 `data`（典型）**：`access_token`、`refresh_token`、`expires_in`、用户信息等（见 `PassportController`）。
-
 ### 1.4 参数命名
 
-- HTTP JSON 建议使用 **snake_case**（如 `order_no`）。
-- GET 查询参数、POST JSON Body 均可能使用；路径参数见各接口路径中的 `{id}` 等。
+- HTTP JSON 建议使用 **snake_case**（如 `order_no`）；小程序客户端会自动做驼峰 ↔ 蛇形转换。
+- GET 查询参数、POST JSON Body 均可能使用；路径参数见各接口路径中的 `{id}`、`{orderNo}` 等。
 
 ---
-
 ## 二、接口列表（`/admin`）
-
 
 ### 2.1 接口总览
 
-> 下列接口均需管理员登录（除 `passport/login`）。具体筛选项、表单字段见 `app/Interface/Admin/Request/**` 与 `app/Interface/Admin/Dto/**`。
+下列接口均需管理员登录（除 `passport/login`）。具体筛选项、表单字段见 `app/Interface/Admin/Request/**` 与 `app/Interface/Admin/Dto/**`。
+
 | 方法 | 路径 | 控制器方法 | 请求类/参数 | 响应 `data` |
 |------|------|------------|-------------|-------------|
 | GET | `/admin/attachment/list` | list | UploadRequest $request | 分页列表（QueryService::page） |

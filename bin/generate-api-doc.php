@@ -295,7 +295,7 @@ MD;
 
 MD;
 
-    $buf .= renderTable($api);
+    $buf .= "\n" . renderTable($api);
     $buf .= <<<'MD'
 
 ### 2.2 认证 / 登录
@@ -773,11 +773,11 @@ MD;
 
 ### 2.1 接口总览
 
-> 下列接口均需管理员登录（除 `passport/login`）。具体筛选项、表单字段见 `app/Interface/Admin/Request/**` 与 `app/Interface/Admin/Dto/**`。
+下列接口均需管理员登录（除 `passport/login`）。具体筛选项、表单字段见 `app/Interface/Admin/Request/**` 与 `app/Interface/Admin/Dto/**`。
 
 MD;
 
-    $buf .= renderTable($admin);
+    $buf .= "\n" . renderTable($admin);
 
     $buf .= <<<'MD'
 
