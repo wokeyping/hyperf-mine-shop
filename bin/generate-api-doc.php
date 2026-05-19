@@ -1034,12 +1034,9 @@ function inferResponseHint(string $methodBody, string $controllerSource, string 
 
 function extractMethodDocSummary(string $content, string $methodName): string
 {
-    $pattern = '/(?:\/\*\*(.*?)\*\/\s*)?(?:#\[[^\]]+\]\s*)*public function\s+'
+    $pattern = '/\/\*\*((?:(?!\*\/).)*+)\*\/(?:\s*#\[[^\n]*\])*\s*public function\s+'
         . preg_quote($methodName, '/') . '\s*\(/s';
     if (! preg_match($pattern, $content, $m)) {
-        return '';
-    }
-    if (! isset($m[1]) || $m[1] === '') {
         return '';
     }
     $body = $m[1];
