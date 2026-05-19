@@ -124,35 +124,66 @@ usort($endpoints, static function ($a, $b) {
     return [$a['group'], $a['path'], $a['method']] <=> [$b['group'], $b['path'], $b['method']];
 });
 
-$out = $base . '/API接口文档.md';
-$md = buildMarkdown($endpoints, $base);
-file_put_contents($out, $md);
-echo "Written: {$out}\n";
-echo 'Endpoints: ' . count($endpoints) . "\n";
+$apiEndpoints = array_values(array_filter($endpoints, static fn ($e) => $e['group'] === 'Api'));
+$adminEndpoints = array_values(array_filter($endpoints, static fn ($e) => $e['group'] === 'Admin'));
 
-function buildMarkdown(array $endpoints, string $base): string
+$files = [
+    $base . '/API接口文档.md' => buildIndexMarkdown(),
+    $base . '/API接口文档-Api.md' => buildApiMarkdown($apiEndpoints),
+    $base . '/API接口文档-Admin.md' => buildAdminMarkdown($adminEndpoints),
+];
+
+foreach ($files as $path => $md) {
+    file_put_contents($path, $md);
+    echo 'Written: ' . $path . "\n";
+}
+echo 'Endpoints: ' . count($endpoints) . ' (Api: ' . count($apiEndpoints) . ', Admin: ' . count($adminEndpoints) . ")\n";
+
+function buildIndexMarkdown(): string
 {
-    $api = array_filter($endpoints, static fn ($e) => $e['group'] === 'Api');
-    $admin = array_filter($endpoints, static fn ($e) => $e['group'] === 'Admin');
+    return <<<'MD'
+# MineShop 接口文档索引
 
-    $buf = <<<'MD'
-# MineShop API 接口文档
+> 根据 `app/Interface` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成总览表）。
 
-> 根据 `app/Interface` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成）。
-> **2.1 / 3.1 总览表含「响应 data」列**（由控制器 `return` 推断）；精细字段以各 `Request`、`Transformer`、`Dto` 为准。
-> 下文对 C 端核心接口补充了请求校验与典型响应说明。
+接口文档已按端拆分：
 
-**基础地址**
+| 文档 | 说明 | 路径前缀 |
+|------|------|----------|
+| [C 端 Api 接口文档](./API接口文档-Api.md) | 小程序 / H5 商城接口 | `/api/v1/*` |
+| [Admin 后台接口文档](./API接口文档-Admin.md) | 管理后台接口 | `/admin/*` |
 
-| 环境 | Admin 后台 | C 端 Api |
-|------|------------|----------|
-| 本地 | `http://127.0.0.1:9501` | 同左 |
-| 说明 | 前缀 `/admin/*` | 前缀 `/api/v1/*` |
+**本地基础地址**：`http://127.0.0.1:9501`
+
+两份文档均包含：统一响应结构、鉴权说明、**接口总览表**（含「响应 data」列）及核心业务接口说明。精细字段以各 `Request`、`Transformer`、`Dto` 为准。
 
 ---
 
-## 一、通用约定
+## 如何查更细的字段
 
+| 需求 | 查看位置 |
+|------|----------|
+| 路由与方法 | `app/Interface/{Admin\|Api}/Controller/**/*.php` 注解 |
+| 入参校验 | `app/Interface/{Admin\|Api}/Request/**/*.php` 的 `*Rules()` |
+| 出参结构 | `app/Interface/Api/Transformer/**`、`app/Interface/Admin/Dto/**` |
+| 业务逻辑 | `app/Application/**`、`app/Domain/**` |
+
+重新生成 **接口总览表**：
+
+```bash
+php bin/generate-api-doc.php
+```
+
+---
+
+*文档版本：与仓库代码同步整理，如有接口变更请以代码注解为准。*
+
+MD;
+}
+
+function commonResponseSection(): string
+{
+    return <<<'MD'
 ### 1.1 统一响应结构
 
 除微信支付回调等少数接口外，JSON 接口均返回：
@@ -190,27 +221,49 @@ function buildMarkdown(array $endpoints, string $base): string
 }
 ```
 
-部分 Admin 列表使用 MineAdmin 约定，也可能在 `data` 中直接返回 `items` + `pageInfo`，以实际接口为准。
+MD;
+}
 
-### 1.3 Admin 鉴权
+function commonParamNamingSection(): string
+{
+    return <<<'MD'
+### 1.4 参数命名
 
-| 项 | 说明 |
-|----|------|
-| Header | `Authorization: Bearer {access_token}` |
-| 登录 | `POST /admin/passport/login` |
-| 刷新 | `POST /admin/passport/refresh` |
-| 权限 | 各接口标注 `permission:code`，需在角色中授权 |
+- HTTP JSON 建议使用 **snake_case**（如 `order_no`）；小程序客户端会自动做驼峰 ↔ 蛇形转换。
+- GET 查询参数、POST JSON Body 均可能使用；路径参数见各接口路径中的 `{id}`、`{orderNo}` 等。
 
-**登录请求体**
+---
 
-| 字段 | 类型 | 必填 | 说明 |
-|------|------|------|------|
-| username | string | 是 | 后台用户名 |
-| password | string | 是 | 密码 |
+MD;
+}
 
-**登录成功 `data`（典型）**：`access_token`、`refresh_token`、`expires_in`、用户信息等（见 `PassportController`）。
+function buildApiMarkdown(array $api): string
+{
+    $buf = <<<'MD'
+# MineShop C 端 Api 接口文档
 
-### 1.4 C 端 Api 鉴权
+> 根据 `app/Interface/Api` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成）。
+> **§2.1 总览表含「响应 data」列**（由控制器 `return` 推断）；精细字段以各 `Request`、`Transformer` 为准。
+> 下文对核心接口补充了请求校验与典型响应说明。
+
+[← 返回文档索引](./API接口文档.md)
+
+**基础地址**
+
+| 环境 | 地址 | 路径前缀 |
+|------|------|----------|
+| 本地 | `http://127.0.0.1:9501` | `/api/v1/*` |
+
+---
+
+## 一、通用约定
+
+MD;
+
+    $buf .= commonResponseSection();
+
+    $buf .= <<<'MD'
+### 1.3 鉴权
 
 | 项 | 说明 |
 |----|------|
@@ -231,14 +284,12 @@ function buildMarkdown(array $endpoints, string $base): string
 
 小程序/H5 实现可参考：`miniprogram/src/services/_utils/signature.ts`。
 
-### 1.5 参数命名
+MD;
 
-- HTTP JSON 建议使用 **snake_case**（如 `order_no`）；小程序客户端会自动做驼峰 ↔ 蛇形转换。
-- GET 查询参数、POST JSON Body 均可能使用；路径参数见各接口路径中的 `{id}`、`{orderNo}` 等。
+    $buf .= commonParamNamingSection();
 
----
-
-## 二、C 端 Api 接口（`/api/v1`）
+    $buf .= <<<'MD'
+## 二、接口列表（`/api/v1`）
 
 ### 2.1 接口总览
 
@@ -644,9 +695,83 @@ Body: `{ "order_no": "..." }`
 
 ---
 
-## 三、Admin 后台接口（`/admin`）
+## 三、如何查更细的字段
 
-### 3.1 接口总览
+| 需求 | 查看位置 |
+|------|----------|
+| 路由与方法 | `app/Interface/Api/Controller/**/*.php` 注解 |
+| 入参校验 | `app/Interface/Api/Request/**/*.php` 的 `*Rules()` |
+| 出参结构 | `app/Interface/Api/Transformer/**` |
+| 业务逻辑 | `app/Application/**`、`app/Domain/**` |
+
+重新生成本文档 **§2.1 接口总览表**：
+
+```bash
+php bin/generate-api-doc.php
+```
+
+---
+
+*文档版本：与仓库代码同步整理，如有接口变更请以代码注解为准。*
+
+MD;
+
+    return $buf;
+}
+
+function buildAdminMarkdown(array $admin): string
+{
+    $buf = <<<'MD'
+# MineShop Admin 后台接口文档
+
+> 根据 `app/Interface/Admin` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成）。
+> **§2.1 总览表含「响应 data」列**（由控制器 `return` 推断）；精细字段以各 `Request`、`Dto` 为准。
+
+[← 返回文档索引](./API接口文档.md)
+
+**基础地址**
+
+| 环境 | 地址 | 路径前缀 |
+|------|------|----------|
+| 本地 | `http://127.0.0.1:9501` | `/admin/*` |
+
+---
+
+## 一、通用约定
+
+MD;
+
+    $buf .= commonResponseSection();
+
+    $buf .= <<<'MD'
+部分列表使用 MineAdmin 约定，也可能在 `data` 中直接返回 `items` + `pageInfo`，以实际接口为准。
+
+### 1.3 鉴权
+
+| 项 | 说明 |
+|----|------|
+| Header | `Authorization: Bearer {access_token}` |
+| 登录 | `POST /admin/passport/login` |
+| 刷新 | `POST /admin/passport/refresh` |
+| 权限 | 各接口标注 `permission:code`，需在角色中授权 |
+
+**登录请求体**
+
+| 字段 | 类型 | 必填 | 说明 |
+|------|------|------|------|
+| username | string | 是 | 后台用户名 |
+| password | string | 是 | 密码 |
+
+**登录成功 `data`（典型）**：`access_token`、`refresh_token`、`expires_in`、用户信息等（见 `PassportController`）。
+
+MD;
+
+    $buf .= commonParamNamingSection();
+
+    $buf .= <<<'MD'
+## 二、接口列表（`/admin`）
+
+### 2.1 接口总览
 
 > 下列接口均需管理员登录（除 `passport/login`）。具体筛选项、表单字段见 `app/Interface/Admin/Request/**` 与 `app/Interface/Admin/Dto/**`。
 
@@ -656,7 +781,7 @@ MD;
 
     $buf .= <<<'MD'
 
-### 3.2 登录与权限
+### 2.2 登录与权限
 
 | 方法 | 路径 | 说明 | 响应 `data` |
 |------|------|------|-------------|
@@ -668,7 +793,7 @@ MD;
 | GET | `/admin/permission/roles` | 角色选项 | 角色列表 |
 | POST | `/admin/permission/update` | 更新权限 | 见控制器返回 |
 
-### 3.3 用户 / 角色 / 菜单 / 部门 / 岗位
+### 2.3 用户 / 角色 / 菜单 / 部门 / 岗位
 
 | 模块 | 前缀 | 主要能力 |
 |------|------|----------|
@@ -681,7 +806,7 @@ MD;
 
 Request 参考：`app/Interface/Admin/Request/Permission/*`
 
-### 3.4 商品中心
+### 2.4 商品中心
 
 | 模块 | 前缀 | 主要能力 |
 |------|------|----------|
@@ -691,7 +816,7 @@ Request 参考：`app/Interface/Admin/Request/Permission/*`
 
 Request 参考：`app/Interface/Admin/Request/Product/*`
 
-### 3.5 订单与售后
+### 2.5 订单与售后
 
 | 模块 | 前缀 | 主要能力 |
 |------|------|----------|
@@ -718,7 +843,7 @@ Request 参考：`app/Interface/Admin/Request/Product/*`
 | shipping_no | 运单号 |
 | remark | 备注 |
 
-### 3.6 会员
+### 2.6 会员
 
 | 模块 | 前缀 | 主要能力 |
 |------|------|----------|
@@ -727,7 +852,7 @@ Request 参考：`app/Interface/Admin/Request/Product/*`
 | 标签 | `/admin/member/tag` | list、options、CRUD |
 | 账户 | `/admin/member/account` | 钱包流水、余额调整 |
 
-### 3.7 营销
+### 2.7 营销
 
 | 模块 | 前缀 | 主要能力 |
 |------|------|----------|
@@ -738,7 +863,7 @@ Request 参考：`app/Interface/Admin/Request/Product/*`
 | 秒杀商品 | `/admin/seckill/product` | list、按场次查、CRUD、批量、启停 |
 | 拼团 | `/admin/group-buy` | list、stats、CRUD、启停、导出 |
 
-### 3.8 运营与系统
+### 2.8 运营与系统
 
 | 模块 | 前缀 | 主要能力 |
 |------|------|----------|
@@ -750,9 +875,9 @@ Request 参考：`app/Interface/Admin/Request/Product/*`
 | 登录/操作日志 | `/admin/user-login-log`、`/admin/user-operation-log` | list、删除 |
 | 站内信 | `admin/system-message/*` | 消息、模板、用户消息、偏好设置 |
 
-### 3.9 Admin 通用说明
+### 2.9 Admin 通用说明
 
-1. **列表接口**：多数为 `GET .../list` 或 `page`，`data` 为分页结构（`list`/`items` + 分页字段），详见 **3.1 总览表「响应 data」列**。
+1. **列表接口**：多数为 `GET .../list` 或 `page`，`data` 为分页结构（`list`/`items` + 分页字段），详见 **2.1 总览表「响应 data」列**。
 2. **详情接口**：`GET .../{id}` 或 `read/{id}`，返回单条实体或 Dto。
 3. **创建/更新**：`POST`/`PUT` 成功常返回空 `{}`、新建 `id` 或完整实体，见各控制器。
 4. **删除**：部分为 `DELETE` + Body 传 `ids`，返回 `{ deleted, failed }` 等。
@@ -761,16 +886,16 @@ Request 参考：`app/Interface/Admin/Request/Product/*`
 
 ---
 
-## 四、如何查更细的字段
+## 三、如何查更细的字段
 
 | 需求 | 查看位置 |
 |------|----------|
-| 路由与方法 | `app/Interface/{Admin\|Api}/Controller/**/*.php` 注解 |
-| 入参校验 | `app/Interface/{Admin\|Api}/Request/**/*.php` 的 `*Rules()` |
-| 出参结构 | `app/Interface/Api/Transformer/**`、`app/Interface/Admin/Dto/**` |
+| 路由与方法 | `app/Interface/Admin/Controller/**/*.php` 注解 |
+| 入参校验 | `app/Interface/Admin/Request/**/*.php` 的 `*Rules()` |
+| 出参结构 | `app/Interface/Admin/Dto/**` |
 | 业务逻辑 | `app/Application/**`、`app/Domain/**` |
 
-重新生成本文档第二节/第三节中的 **接口总览表**：
+重新生成本文档 **§2.1 接口总览表**：
 
 ```bash
 php bin/generate-api-doc.php
