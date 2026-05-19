@@ -1,8 +1,7 @@
 # MineShop C 端 Api 接口文档
 
-> 根据 `app/Interface/Api` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成）。
-> **§2.1 总览表含「响应 data」列**（由控制器 `return` 推断）；精细字段以各 `Request`、`Transformer` 为准。
-> 下文对核心接口补充了请求校验与典型响应说明。
+> 根据 `app/Interface/Api` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成 **§2.1 接口总览表**）。
+> 总览表仅列方法、路径与用途说明；**请求参数、响应 `data` 结构**见 §2.2 起各模块详细说明。
 
 [← 返回文档索引](./API接口文档.md)
 
@@ -81,74 +80,74 @@
 
 ### 2.1 接口总览
 
-| 方法 | 路径 | 控制器方法 | 请求类/参数 | 响应 `data` |
-|------|------|------------|-------------|-------------|
-| GET | `/api/v1/after-sales` | index | — | list[] + pagination |
-| POST | `/api/v1/after-sales` | apply | AfterSaleApplyRequest $request | 业务对象（Transformer） |
-| GET | `/api/v1/after-sales/eligibility` | eligibility | — | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/after-sales/{id}` | detail | int $id | 业务对象（Transformer） |
-| POST | `/api/v1/after-sales/{id}/cancel` | cancel | int $id | 空对象 {} |
-| POST | `/api/v1/after-sales/{id}/confirm-exchange-received` | confirmExchangeReceived | int $id | 空对象 {} |
-| GET | `/api/v1/after-sales/{id}/reship-logistics` | reshipLogistics | int $id | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/after-sales/{id}/return-logistics` | returnLogistics | int $id | 业务数据（见 Service/Transformer） |
-| POST | `/api/v1/after-sales/{id}/return-shipment` | submitReturnShipment | int $id, AfterSaleReturnShipmentRequest $request | 空对象 {} |
-| POST | `/api/v1/auth/captcha` | captcha | SendVerificationCodeRequest $request | phone, scene, code?(调试) |
-| POST | `/api/v1/auth/forgotPassword` | forgotPassword | ForgotPasswordRequest $request | 空对象 {} |
-| POST | `/api/v1/auth/register` | register | RegisterRequest $request | token, refresh_token, expires_in, member |
-| GET | `/api/v1/auth/register/protocols` | registerProtocols | — | userAgreement, privacyPolicy |
-| GET | `/api/v1/cart` | index | — | 业务数据（见 Service/Transformer） |
-| POST | `/api/v1/cart/clear-invalid` | clearInvalid | — | 业务数据（见 Service/Transformer） |
-| POST | `/api/v1/cart/items` | store | CartItemStoreRequest $request | 业务数据（见 Service/Transformer） |
-| DELETE | `/api/v1/cart/items/{skuId}` | destroy | int $skuId | 业务数据（见 Service/Transformer） |
-| PUT | `/api/v1/cart/items/{skuId}` | update | CartItemUpdateRequest $request, int $skuId | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/categories` | index | — | 对象（见控制器内联数组） |
-| GET | `/api/v1/coupons/available` | available | CouponAvailableRequest $request | 对象（见控制器内联数组） |
-| GET | `/api/v1/coupons/{id}` | show | int $id | 对象（见控制器） |
-| GET | `/api/v1/geo/regions` | index | RequestInterface $request | 对象（见控制器） |
-| GET | `/api/v1/group-buy/products` | index | — | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/group-buy/products/{activityId}/groups` | groups | int $activityId | 对象（见控制器内联数组） |
-| GET | `/api/v1/group-buy/products/{activityId}/{spuId}` | show | int $activityId, int $spuId | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/home` | show | — | 业务数据（见 Service/Transformer） |
-| POST | `/api/v1/login/h5Password` | h5Password | — | token, refresh_token, expires_in, member |
-| POST | `/api/v1/login/miniApp` | miniApp | — | token, refresh_token, expires_in, member |
-| GET | `/api/v1/member/addresses` | index | — | list[]（+ 可选 total） |
-| POST | `/api/v1/member/addresses` | store | MemberAddressRequest $request | 业务对象（Transformer） |
-| DELETE | `/api/v1/member/addresses/{id}` | destroy | int $id | 空对象 {} |
-| GET | `/api/v1/member/addresses/{id}` | show | int $id | 业务对象（Transformer） |
-| PUT | `/api/v1/member/addresses/{id}` | update | MemberAddressRequest $request, int $id | 业务对象（Transformer） |
-| POST | `/api/v1/member/addresses/{id}/default` | markDefault | int $id | 空对象 {} |
-| GET | `/api/v1/member/center` | center | — | userInfo, countsData, orderTagInfos… |
-| GET | `/api/v1/member/coupons` | index | — | 对象（见控制器内联数组） |
-| POST | `/api/v1/member/coupons/receive` | receive | CouponReceiveRequest $request | 对象（见控制器内联数组） |
-| GET | `/api/v1/member/invite/qrcode` | inviteQrCode | — | 业务数据（见 Service/Transformer） |
-| POST | `/api/v1/member/phone/bind` | bindPhone | PhoneAuthorizeRequest $request | phone_number, pure_phone_number, country_code |
-| GET | `/api/v1/member/profile` | profile | — | member（MemberProfileTransformer） |
-| POST | `/api/v1/member/profile/authorize` | authorizeProfile | ProfileAuthorizeRequest $request | 空对象 {} |
-| POST | `/api/v1/member/profile/update` | updateProfile | ProfileUpdateRequest $request | 空对象 {} |
-| GET | `/api/v1/member/wallet/transactions` | transactions | WalletTransactionRequest $request | list[], total |
-| POST | `/api/v1/order/cancel` | cancel | OrderCancelRequest $request | 空对象 {} |
-| POST | `/api/v1/order/confirm-receipt` | confirmReceipt | OrderConfirmReceiptRequest $request | 空对象 {} |
-| GET | `/api/v1/order/detail/{orderNo}` | detail | string $orderNo | orderTransformer 对象 |
-| GET | `/api/v1/order/list` | list | OrderListRequest $request | list[] + pagination |
-| GET | `/api/v1/order/logistics/{orderNo}` | logistics | string $orderNo | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/order/pay-info/{orderNo}` | payInfo | string $orderNo | 对象（见控制器） |
-| POST | `/api/v1/order/payment` | payment | OrderPaymentRequest $request | 业务数据（见 Service/Transformer） |
-| POST | `/api/v1/order/preview` | preview | OrderPreviewRequest $request | 见 checkoutTransformer |
-| GET | `/api/v1/order/statistics` | statistics | — | 见 orderTransformer |
-| POST | `/api/v1/order/submit` | submit | OrderCommitRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/order/submit-result/{tradeNo}` | submitResult | string $tradeNo | 业务数据（见 Service/Transformer） |
-| POST | `/api/v1/payment/wechat/pay-notify` | payNotify | — | 业务数据（见 Service/Transformer） |
-| POST | `/api/v1/payment/wechat/refund-notify` | refundNotify | — | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/products` | index | ProductListRequest $request | list[]（+ 可选 total） |
-| GET | `/api/v1/products/{id}` | show | int $id | 业务对象（Transformer） |
-| POST | `/api/v1/review` | store | CreateReviewRequest $request | { id } 或含 id 的对象 |
-| GET | `/api/v1/review/product/{id}` | productReviews | int $id | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/review/product/{id}/stats` | productStats | int $id | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/review/product/{id}/summary` | productSummary | int $id | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/seckill/products` | index | — | 业务数据（见 Service/Transformer） |
-| GET | `/api/v1/seckill/products/{sessionId}/{spuId}` | show | int $sessionId, int $spuId | 业务对象（Transformer） |
-| GET | `/api/v1/seckill/sessions` | index | — | 业务数据（见 Service/Transformer） |
-| POST | `/api/v1/upload/image` | image | RequestInterface $request | 对象（见控制器） |
+| 方法 | 路径 | 说明 | 控制器方法 |
+|------|------|------|------------|
+| GET | `/api/v1/after-sales` | 获取当前会员的售后单列表 | index |
+| POST | `/api/v1/after-sales` | 提交售后申请 | apply |
+| GET | `/api/v1/after-sales/eligibility` | 获取订单商品项的售后资格和当前售后信息... | eligibility |
+| GET | `/api/v1/after-sales/{id}` | 获取当前会员的售后单详情 | detail |
+| POST | `/api/v1/after-sales/{id}/cancel` | 会员撤销待审核状态的售后申请 | cancel |
+| POST | `/api/v1/after-sales/{id}/confirm-exchange-received` | 确认换货补发商品已收货 | confirmExchangeReceived |
+| GET | `/api/v1/after-sales/{id}/reship-logistics` | 获取当前会员的售后单详情 | reshipLogistics |
+| GET | `/api/v1/after-sales/{id}/return-logistics` | 获取当前会员的售后单详情 | returnLogistics |
+| POST | `/api/v1/after-sales/{id}/return-shipment` | 提交买家退货物流信息 | submitReturnShipment |
+| POST | `/api/v1/auth/captcha` | 验证码发送 | captcha |
+| POST | `/api/v1/auth/forgotPassword` | 密码重置 | forgotPassword |
+| POST | `/api/v1/auth/register` | 注册 | register |
+| GET | `/api/v1/auth/register/protocols` | 注册协议文案 | registerProtocols |
+| GET | `/api/v1/cart` | 购物车列表 | index |
+| POST | `/api/v1/cart/clear-invalid` | 清理失效购物车商品 | clearInvalid |
+| POST | `/api/v1/cart/items` | 加入购物车 | store |
+| DELETE | `/api/v1/cart/items/{skuId}` | 删除购物车商品 | destroy |
+| PUT | `/api/v1/cart/items/{skuId}` | 更新购物车商品数量 | update |
+| GET | `/api/v1/categories` | 分类树/列表 | index |
+| GET | `/api/v1/coupons/available` | 可领/可用优惠券 | available |
+| GET | `/api/v1/coupons/{id}` | 优惠券详情 | show |
+| GET | `/api/v1/geo/regions` | 省市区数据 | index |
+| GET | `/api/v1/group-buy/products` | 拼团商品列表（小程序促销页用） | index |
+| GET | `/api/v1/group-buy/products/{activityId}/groups` | 获取某个拼团活动正在进行中的团列表（可参团）... | groups |
+| GET | `/api/v1/group-buy/products/{activityId}/{spuId}` | 获取某个拼团活动正在进行中的团列表（可参团）... | show |
+| GET | `/api/v1/home` | 首页数据（Banner、推荐等） | show |
+| POST | `/api/v1/login/h5Password` | H5密码登录 | h5Password |
+| POST | `/api/v1/login/miniApp` | 小程序授权登录 | miniApp |
+| GET | `/api/v1/member/addresses` | 收货地址列表 | index |
+| POST | `/api/v1/member/addresses` | 新增收货地址 | store |
+| DELETE | `/api/v1/member/addresses/{id}` | 删除 | destroy |
+| GET | `/api/v1/member/addresses/{id}` | 收货地址详情 | show |
+| PUT | `/api/v1/member/addresses/{id}` | 修改收货地址 | update |
+| POST | `/api/v1/member/addresses/{id}/default` | 设置默认地址 | markDefault |
+| GET | `/api/v1/member/center` | 个人中心聚合数据 | center |
+| GET | `/api/v1/member/coupons` | 我的优惠券 | index |
+| POST | `/api/v1/member/coupons/receive` | 领取优惠券 | receive |
+| GET | `/api/v1/member/invite/qrcode` | 邀请二维码 | inviteQrCode |
+| POST | `/api/v1/member/phone/bind` | 手机号授权 | bindPhone |
+| GET | `/api/v1/member/profile` | 个人资料 | profile |
+| POST | `/api/v1/member/profile/authorize` | 头像昵称授权 | authorizeProfile |
+| POST | `/api/v1/member/profile/update` | 资料修改 | updateProfile |
+| GET | `/api/v1/member/wallet/transactions` | 钱包流水 | transactions |
+| POST | `/api/v1/order/cancel` | 取消订单（仅待付款状态） | cancel |
+| POST | `/api/v1/order/confirm-receipt` | 确认收货（仅已发货状态） | confirmReceipt |
+| GET | `/api/v1/order/detail/{orderNo}` | 获取订单详情 | detail |
+| GET | `/api/v1/order/list` | 获取订单列表 | list |
+| GET | `/api/v1/order/logistics/{orderNo}` | 获取订单详情 | logistics |
+| GET | `/api/v1/order/pay-info/{orderNo}` | 获取待支付订单的支付信息（用于重新支付场景）... | payInfo |
+| POST | `/api/v1/order/payment` | 轮询异步下单结果 | payment |
+| POST | `/api/v1/order/preview` | 订单预览（结算页） | preview |
+| GET | `/api/v1/order/statistics` | 获取订单统计 | statistics |
+| POST | `/api/v1/order/submit` | 订单提交中 | submit |
+| GET | `/api/v1/order/submit-result/{tradeNo}` | 轮询异步下单结果 | submitResult |
+| POST | `/api/v1/payment/wechat/pay-notify` | 微信支付回调 | payNotify |
+| POST | `/api/v1/payment/wechat/refund-notify` | 微信退款回调 | refundNotify |
+| GET | `/api/v1/products` | 商品列表 | index |
+| GET | `/api/v1/products/{id}` | 商品详情 | show |
+| POST | `/api/v1/review` | 提交评价（需认证） | store |
+| GET | `/api/v1/review/product/{id}` | 商品评价列表 | productReviews |
+| GET | `/api/v1/review/product/{id}/stats` | 商品评价统计 | productStats |
+| GET | `/api/v1/review/product/{id}/summary` | 商品评价摘要（详情页用） | productSummary |
+| GET | `/api/v1/seckill/products` | 秒杀商品列表（小程序促销页用） | index |
+| GET | `/api/v1/seckill/products/{sessionId}/{spuId}` | 秒杀商品列表（小程序促销页用） | show |
+| GET | `/api/v1/seckill/sessions` | 列表 | index |
+| POST | `/api/v1/upload/image` | 小程序文件上传 | image |
 
 
 ### 2.2 认证 / 登录

@@ -83,14 +83,16 @@ foreach ($sections as $group => $dir) {
             $sub = $m[2] === '' ? '' : '/' . ltrim($m[2], '/');
             $action = $m[3];
             $methodBody = extractMethodBody($content, $action);
+            $path = $prefix . $sub;
             $endpoints[] = [
                 'group' => $group,
                 'method' => strtoupper($m[1]),
-                'path' => $prefix . $sub,
+                'path' => $path,
                 'action' => $action,
                 'params' => trim($m[4]),
                 'file' => $rel,
                 'response' => inferResponseHint($methodBody, $content, $action),
+                'description' => inferEndpointDescription($content, $action, $path, strtoupper($m[1]), $methodBody),
             ];
         }
 
@@ -106,14 +108,16 @@ foreach ($sections as $group => $dir) {
                     $method = 'GET';
                 }
                 $methodBody = extractMethodBody($content, $fn);
+                $path = $prefix . '/' . $fn;
                 $endpoints[] = [
                     'group' => $group,
                     'method' => $method,
-                    'path' => $prefix . '/' . $fn,
+                    'path' => $path,
                     'action' => $fn,
                     'params' => '',
                     'file' => $rel,
                     'response' => inferResponseHint($methodBody, $content, $fn),
+                    'description' => inferEndpointDescription($content, $fn, $path, $method, $methodBody),
                 ];
             }
         }
@@ -155,7 +159,7 @@ function buildIndexMarkdown(): string
 
 **本地基础地址**：`http://127.0.0.1:9501`
 
-两份文档均包含：统一响应结构、鉴权说明、**接口总览表**（含「响应 data」列）及核心业务接口说明。精细字段以各 `Request`、`Transformer`、`Dto` 为准。
+两份文档均包含：统一响应结构、鉴权说明、**接口总览表**（方法/路径/说明）及核心业务接口的请求参数与响应说明。精细字段以各 `Request`、`Transformer`、`Dto` 为准。
 
 ---
 
@@ -242,9 +246,8 @@ function buildApiMarkdown(array $api): string
     $buf = <<<'MD'
 # MineShop C 端 Api 接口文档
 
-> 根据 `app/Interface/Api` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成）。
-> **§2.1 总览表含「响应 data」列**（由控制器 `return` 推断）；精细字段以各 `Request`、`Transformer` 为准。
-> 下文对核心接口补充了请求校验与典型响应说明。
+> 根据 `app/Interface/Api` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成 **§2.1 接口总览表**）。
+> 总览表仅列方法、路径与用途说明；**请求参数、响应 `data` 结构**见 §2.2 起各模块详细说明。
 
 [← 返回文档索引](./API接口文档.md)
 
@@ -724,8 +727,8 @@ function buildAdminMarkdown(array $admin): string
     $buf = <<<'MD'
 # MineShop Admin 后台接口文档
 
-> 根据 `app/Interface/Admin` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成）。
-> **§2.1 总览表含「响应 data」列**（由控制器 `return` 推断）；精细字段以各 `Request`、`Dto` 为准。
+> 根据 `app/Interface/Admin` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成 **§2.1 接口总览表**）。
+> 总览表仅列方法、路径与用途说明；入参、出参详见 §2.2 起各模块说明及 `Request`/`Dto`。
 
 [← 返回文档索引](./API接口文档.md)
 
@@ -877,7 +880,7 @@ Request 参考：`app/Interface/Admin/Request/Product/*`
 
 ### 2.9 Admin 通用说明
 
-1. **列表接口**：多数为 `GET .../list` 或 `page`，`data` 为分页结构（`list`/`items` + 分页字段），详见 **2.1 总览表「响应 data」列**。
+1. **列表接口**：多数为 `GET .../list` 或 `page`，`data` 为分页结构（`list`/`items` + 分页字段），详见各模块说明。
 2. **详情接口**：`GET .../{id}` 或 `read/{id}`，返回单条实体或 Dto。
 3. **创建/更新**：`POST`/`PUT` 成功常返回空 `{}`、新建 `id` 或完整实体，见各控制器。
 4. **删除**：部分为 `DELETE` + Body 传 `ids`，返回 `{ deleted, failed }` 等。
@@ -1029,29 +1032,169 @@ function inferResponseHint(string $methodBody, string $controllerSource, string 
     return '业务数据（见控制器）';
 }
 
+function extractMethodDocSummary(string $content, string $methodName): string
+{
+    $pattern = '/(?:\/\*\*(.*?)\*\/\s*)?(?:#\[[^\]]+\]\s*)*public function\s+'
+        . preg_quote($methodName, '/') . '\s*\(/s';
+    if (! preg_match($pattern, $content, $m)) {
+        return '';
+    }
+    if (! isset($m[1]) || $m[1] === '') {
+        return '';
+    }
+    $body = $m[1];
+    if (strpos($body, '@link') !== false || strpos($body, '@license') !== false) {
+        return '';
+    }
+    foreach (preg_split('/\r?\n/', $body) as $line) {
+        $line = trim($line, " \t*");
+        if ($line === '' || (isset($line[0]) && $line[0] === '@')) {
+            continue;
+        }
+        return rtrim($line, '. ');
+    }
+
+    return '';
+}
+
+function inferEndpointDescription(string $content, string $action, string $path, string $method, string $methodBody): string
+{
+    $doc = extractMethodDocSummary($content, $action);
+    if ($doc !== '') {
+        return $doc;
+    }
+
+    $key = $method . ' ' . $path;
+    $known = [
+        'POST /api/v1/login/miniApp' => '小程序授权登录',
+        'POST /api/v1/login/h5Password' => 'H5 密码登录',
+        'POST /api/v1/auth/captcha' => '发送验证码',
+        'POST /api/v1/auth/register' => '注册',
+        'POST /api/v1/auth/forgotPassword' => '忘记密码',
+        'GET /api/v1/auth/register/protocols' => '注册协议文案',
+        'GET /api/v1/cart' => '购物车列表',
+        'POST /api/v1/cart/items' => '加入购物车',
+        'PUT /api/v1/cart/items/{skuId}' => '更新购物车商品数量',
+        'DELETE /api/v1/cart/items/{skuId}' => '删除购物车商品',
+        'POST /api/v1/cart/clear-invalid' => '清理失效购物车商品',
+        'GET /api/v1/categories' => '分类树/列表',
+        'GET /api/v1/products' => '商品列表',
+        'GET /api/v1/products/{id}' => '商品详情',
+        'GET /api/v1/home' => '首页数据（Banner、推荐等）',
+        'POST /api/v1/upload/image' => '图片上传',
+        'GET /api/v1/geo/regions' => '省市区数据',
+        'GET /api/v1/member/profile' => '个人资料',
+        'GET /api/v1/member/center' => '个人中心聚合数据',
+        'POST /api/v1/member/profile/update' => '更新个人资料',
+        'POST /api/v1/member/profile/authorize' => '授权头像昵称',
+        'POST /api/v1/member/phone/bind' => '绑定手机号',
+        'GET /api/v1/member/invite/qrcode' => '邀请二维码',
+        'GET /api/v1/member/wallet/transactions' => '钱包流水',
+        'GET /api/v1/member/addresses' => '收货地址列表',
+        'POST /api/v1/member/addresses' => '新增收货地址',
+        'GET /api/v1/member/addresses/{id}' => '收货地址详情',
+        'PUT /api/v1/member/addresses/{id}' => '修改收货地址',
+        'DELETE /api/v1/member/addresses/{id}' => '删除收货地址',
+        'POST /api/v1/member/addresses/{id}/default' => '设为默认地址',
+        'GET /api/v1/coupons/available' => '可领/可用优惠券',
+        'GET /api/v1/coupons/{id}' => '优惠券详情',
+        'GET /api/v1/member/coupons' => '我的优惠券',
+        'POST /api/v1/member/coupons/receive' => '领取优惠券',
+        'POST /api/v1/order/preview' => '订单预览（结算页）',
+        'POST /api/v1/order/submit' => '提交订单（异步）',
+        'POST /api/v1/order/payment' => '发起支付',
+        'GET /api/v1/order/logistics/{orderNo}' => '物流轨迹',
+        'GET /api/v1/after-sales/{id}/return-logistics' => '退货物流',
+        'GET /api/v1/after-sales/{id}/reship-logistics' => '换货发货物流',
+        'GET /api/v1/group-buy/products/{activityId}/{spuId}' => '拼团商品详情',
+        'GET /api/v1/seckill/products/{sessionId}/{spuId}' => '秒杀商品详情',
+        'GET /api/v1/seckill/sessions' => '秒杀场次列表',
+        'POST /api/v1/payment/wechat/pay-notify' => '微信支付回调',
+        'POST /api/v1/payment/wechat/refund-notify' => '微信退款回调',
+        'POST /admin/passport/login' => '管理员登录',
+        'POST /admin/passport/logout' => '退出登录',
+        'GET /admin/passport/getInfo' => '当前登录用户信息',
+        'POST /admin/passport/refresh' => '刷新 Token',
+    ];
+    if (isset($known[$key])) {
+        return $known[$key];
+    }
+
+    if (preg_match('/(?:success|successWith\w+|fail)\([^)]*,\s*[\'"]([^\'"]+)[\'"]\s*\)/', $methodBody, $m)) {
+        $msg = preg_replace('/成功$/u', '', $m[1]);
+        if ($msg !== '' && $msg !== '获取') {
+            return $msg;
+        }
+    }
+
+    $actionLabels = [
+        'index' => '列表',
+        'list' => '列表',
+        'show' => '详情',
+        'detail' => '详情',
+        'store' => '新增',
+        'update' => '修改',
+        'destroy' => '删除',
+        'apply' => '申请',
+        'cancel' => '取消',
+        'statistics' => '统计',
+        'preview' => '预览',
+        'submit' => '提交',
+        'payment' => '支付',
+        'eligibility' => '资格查询',
+        'captcha' => '发送验证码',
+        'register' => '注册',
+        'forgotPassword' => '忘记密码',
+        'registerProtocols' => '注册协议',
+        'profile' => '个人资料',
+        'center' => '个人中心',
+        'bindPhone' => '绑定手机号',
+        'updateProfile' => '更新资料',
+        'authorizeProfile' => '授权资料',
+        'inviteQrCode' => '邀请二维码',
+        'transactions' => '流水记录',
+        'clearInvalid' => '清理失效项',
+        'confirmReceipt' => '确认收货',
+        'payInfo' => '支付信息',
+        'payNotify' => '支付回调',
+        'refundNotify' => '退款回调',
+        'productReviews' => '商品评价列表',
+        'productStats' => '商品评价统计',
+        'productSummary' => '商品评价摘要',
+        'groups' => '进行中的团列表',
+        'receive' => '领取',
+        'available' => '可用列表',
+        'image' => '上传',
+        'markDefault' => '设为默认',
+        'submitReturnShipment' => '提交退货物流',
+        'confirmExchangeReceived' => '确认换货收货',
+        'returnLogistics' => '退货物流',
+        'reshipLogistics' => '换货物流',
+        'submitResult' => '轮询下单结果',
+        'logistics' => '物流轨迹',
+    ];
+    if (isset($actionLabels[$action])) {
+        return $actionLabels[$action];
+    }
+
+    return $action;
+}
+
 function renderTable(array $endpoints): string
 {
-    $lines = "| 方法 | 路径 | 控制器方法 | 请求类/参数 | 响应 `data` |\n";
-    $lines .= "|------|------|------------|-------------|-------------|\n";
+    $lines = "| 方法 | 路径 | 说明 | 控制器方法 |\n";
+    $lines .= "|------|------|------|------------|\n";
     foreach ($endpoints as $e) {
-        $params = $e['params'] !== '' ? $e['params'] : '—';
-        if (strlen($params) > 60) {
-            $params = preg_replace('/\$request[^,)]*/', 'Request', $params);
-            if (strlen($params) > 60) {
-                $params = substr($params, 0, 57) . '...';
-            }
-        }
-        $response = $e['response'] ?? '见控制器';
-        if (strlen($response) > 72) {
-            $response = substr($response, 0, 69) . '...';
+        $description = $e['description'] ?? $e['action'];
+        if (strlen($description) > 56) {
+            $description = (function_exists('mb_substr') ? mb_substr($description, 0, 53) : substr($description, 0, 53)) . '...';
         }
         $lines .= sprintf(
-            "| %s | `%s` | %s | %s | %s |\n",
+            "| %s | `%s` | %s | %s |\n",
             $e['method'],
             $e['path'],
-            $e['action'],
-            $params === '' ? '—' : $params,
-            $response
+            $description,
+            $e['action']
         );
     }
     return $lines . "\n";

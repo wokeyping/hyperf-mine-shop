@@ -1,7 +1,7 @@
 # MineShop Admin 后台接口文档
 
-> 根据 `app/Interface/Admin` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成）。
-> **§2.1 总览表含「响应 data」列**（由控制器 `return` 推断）；精细字段以各 `Request`、`Dto` 为准。
+> 根据 `app/Interface/Admin` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成 **§2.1 接口总览表**）。
+> 总览表仅列方法、路径与用途说明；入参、出参详见 §2.2 起各模块说明及 `Request`/`Dto`。
 
 [← 返回文档索引](./API接口文档.md)
 
@@ -81,231 +81,231 @@
 
 下列接口均需管理员登录（除 `passport/login`）。具体筛选项、表单字段见 `app/Interface/Admin/Request/**` 与 `app/Interface/Admin/Dto/**`。
 
-| 方法 | 路径 | 控制器方法 | 请求类/参数 | 响应 `data` |
-|------|------|------------|-------------|-------------|
-| GET | `/admin/attachment/list` | list | UploadRequest $request | 分页列表（QueryService::page） |
-| POST | `/admin/attachment/upload` | upload | UploadRequest $request | 业务数据（见 Service/Transformer） |
-| DELETE | `/admin/attachment/{id}` | delete | int $id | 空对象 {} |
-| POST | `/admin/coupon` | store | CouponRequest $request | 空对象 {} |
-| POST | `/admin/coupon/export` | export | CouponRequest $request | task_id, status（导出任务） |
-| GET | `/admin/coupon/list` | list | CouponRequest $request | 分页列表（QueryService::page） |
-| GET | `/admin/coupon/stats` | stats | — | 统计数据对象 |
-| GET | `/admin/coupon/user/list` | list | CouponUserRequest $request | 分页列表（QueryService::page） |
-| PUT | `/admin/coupon/user/{id:\d+}/mark-expired` | markExpired | int $id, CouponUserRequest $request | null 或空 |
-| PUT | `/admin/coupon/user/{id:\d+}/mark-used` | markUsed | int $id, CouponUserRequest $request | null 或空 |
-| DELETE | `/admin/coupon/{id:\d+}` | delete | int $id | null 或空 |
-| GET | `/admin/coupon/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/coupon/{id:\d+}` | update | int $id, CouponRequest $request | 空对象 {} |
-| POST | `/admin/coupon/{id:\d+}/issue` | issue | int $id, CouponIssueRequest $request | 业务数据（见控制器） |
-| PUT | `/admin/coupon/{id:\d+}/toggle-status` | toggleStatus | int $id | null 或空 |
-| GET | `/admin/dashboard/analysis` | analysis | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/dashboard/report` | report | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/dashboard/welcome` | welcome | — | 业务数据（见 Service/Transformer） |
-| DELETE | `/admin/department` | delete | — | 空对象 {} |
-| POST | `/admin/department` | create | DepartmentRequest $request | 空对象 {} |
-| GET | `/admin/department/list` | pageList | — | 对象（见控制器内联数组） |
-| PUT | `/admin/department/{id}` | save | int $id, DepartmentRequest $request | 空对象 {} |
-| POST | `/admin/group-buy` | store | GroupBuyRequest $request | 空对象 {} |
-| POST | `/admin/group-buy-order/export` | export | — | task_id, status（导出任务） |
-| GET | `/admin/group-buy-order/list` | list | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/group-buy-order/{activityId:\d+}/orders` | orders | int $activityId | 业务数据（见 Service/Transformer） |
-| POST | `/admin/group-buy/export` | export | GroupBuyRequest $request | task_id, status（导出任务） |
-| GET | `/admin/group-buy/list` | list | GroupBuyRequest $request | 分页列表（QueryService::page） |
-| GET | `/admin/group-buy/stats` | stats | — | 统计数据对象 |
-| DELETE | `/admin/group-buy/{id:\d+}` | delete | int $id | null 或空 |
-| GET | `/admin/group-buy/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/group-buy/{id:\d+}` | update | int $id, GroupBuyRequest $request | 空对象 {} |
-| PUT | `/admin/group-buy/{id:\d+}/toggle-status` | toggleStatus | int $id | null 或空 |
-| DELETE | `/admin/leader` | delete | — | 空对象 {} |
-| POST | `/admin/leader` | create | LeaderRequest $request | 空对象 {} |
-| GET | `/admin/leader/list` | pageList | — | 分页列表（QueryService::page） |
-| POST | `/admin/member/account/wallet/adjust` | adjust | MemberAccountRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/member/account/wallet/logs` | walletLogs | MemberAccountRequest $request | 分页列表（QueryService::page） |
-| POST | `/admin/member/level` | store | MemberLevelRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/member/level/list` | list | MemberLevelRequest $request | 分页列表（QueryService::page） |
-| DELETE | `/admin/member/level/{id:\d+}` | delete | int $id | null 或空 |
-| GET | `/admin/member/level/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/member/level/{id:\d+}` | update | int $id, MemberLevelRequest $request | 业务数据（见 Service/Transformer） |
-| POST | `/admin/member/member` | store | MemberRequest $request | 业务数据（见 Service/Transformer） |
-| POST | `/admin/member/member/export` | export | MemberRequest $request | task_id, status（导出任务） |
-| GET | `/admin/member/member/list` | list | MemberRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/member/member/overview` | overview | MemberRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/member/member/stats` | stats | MemberRequest $request | 统计数据对象 |
-| GET | `/admin/member/member/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/member/member/{id:\d+}` | update | int $id, MemberRequest $request | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/member/member/{id:\d+}/status` | updateStatus | int $id, MemberRequest $request | 空对象 {} |
-| PUT | `/admin/member/member/{id:\d+}/tags` | syncTags | int $id, MemberRequest $request | 空对象 {} |
-| POST | `/admin/member/tag` | store | MemberTagRequest $request | 空对象 {} |
-| GET | `/admin/member/tag/list` | list | MemberTagRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/member/tag/options` | options | — | 业务数据（见 Service/Transformer） |
-| DELETE | `/admin/member/tag/{id:\d+}` | delete | int $id | null 或空 |
-| PUT | `/admin/member/tag/{id:\d+}` | update | int $id, MemberTagRequest $request | 空对象 {} |
-| DELETE | `/admin/menu` | delete | — | 空对象 {} |
-| POST | `/admin/menu` | create | MenuRequest $request | 空对象 {} |
-| GET | `/admin/menu/list` | pageList | RequestInterface $request | 业务数据（见控制器） |
-| PUT | `/admin/menu/{id}` | save | int $id, MenuRequest $request | 空对象 {} |
-| GET | `/admin/order/after-sale/list` | list | AfterSaleReviewRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/order/after-sale/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/order/after-sale/{id:\d+}/approve` | approve | int $id, AfterSaleReviewRequest $request | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/order/after-sale/{id:\d+}/complete-exchange` | completeExchange | int $id, AfterSaleReviewRequest $request | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/order/after-sale/{id:\d+}/receive` | receive | int $id, AfterSaleReviewRequest $request | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/order/after-sale/{id:\d+}/refund` | refund | int $id, AfterSaleReviewRequest $request | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/order/after-sale/{id:\d+}/reject` | reject | int $id, AfterSaleReviewRequest $request | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/order/after-sale/{id:\d+}/reship` | reship | int $id, AfterSaleReviewRequest $request | 业务数据（见 Service/Transformer） |
-| POST | `/admin/order/order/export` | export | OrderRequest $request | task_id, status（导出任务） |
-| GET | `/admin/order/order/list` | list | OrderRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/order/order/stats` | stats | OrderRequest $request | 统计数据对象 |
-| GET | `/admin/order/order/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/order/order/{id:\d+}/cancel` | cancel | int $id, OrderRequest $request | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/order/order/{id:\d+}/ship` | ship | int $id, OrderRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/passport/getInfo` | getInfo | — | 用户基本信息字段 |
-| POST | `/admin/passport/login` | login | PassportLoginRequest $request | access_token, refresh_token, expire_at |
-| POST | `/admin/passport/logout` | logout | — | 空对象 {} |
-| POST | `/admin/passport/refresh` | refresh | — | access_token, refresh_token, expire_at |
-| GET | `/admin/permission/menus` | menus | — | 业务数据（见控制器） |
-| GET | `/admin/permission/roles` | roles | — | 业务数据（见控制器） |
-| POST | `/admin/permission/update` | update | PermissionRequest $request | 空对象 {} |
-| DELETE | `/admin/position` | delete | — | 空对象 {} |
-| POST | `/admin/position` | create | PositionRequest $request | 空对象 {} |
-| GET | `/admin/position/list` | pageList | — | 分页列表（QueryService::page） |
-| PUT | `/admin/position/{id}` | save | int $id, PositionRequest $request | 空对象 {} |
-| PUT | `/admin/position/{id}/data_permission` | batchDataPermission | int $id, BatchGrantDataPermissionForPositionRequest $request | 空对象 {} |
-| POST | `/admin/product/brand` | store | BrandRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/product/brand/list` | list | BrandRequest $request | 分页列表（QueryService::page） |
-| GET | `/admin/product/brand/options` | options | — | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/product/brand/sort` | sort | BrandRequest $request | null 或空 |
-| GET | `/admin/product/brand/statistics` | statistics | — | 业务数据（见 Service/Transformer） |
-| DELETE | `/admin/product/brand/{id:\d+}` | delete | int $id | null 或空 |
-| GET | `/admin/product/brand/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/product/brand/{id:\d+}` | update | int $id, BrandRequest $request | 空对象 {} |
-| POST | `/admin/product/category` | store | CategoryRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/product/category/list` | list | CategoryRequest $request | 分页列表（QueryService::page） |
-| PUT | `/admin/product/category/move` | move | CategoryRequest $request | null 或空 |
-| GET | `/admin/product/category/options` | options | CategoryRequest $request | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/product/category/sort` | sort | CategoryRequest $request | null 或空 |
-| GET | `/admin/product/category/statistics` | statistics | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/product/category/tree` | tree | CategoryRequest $request | 业务数据（见 Service/Transformer） |
-| DELETE | `/admin/product/category/{id:\d+}` | delete | int $id | null 或空 |
-| GET | `/admin/product/category/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/product/category/{id:\d+}` | update | int $id, CategoryRequest $request | 空对象 {} |
-| GET | `/admin/product/category/{id:\d+}/breadcrumb` | breadcrumb | int $id | 业务数据（见 Service/Transformer） |
-| POST | `/admin/product/product` | store | ProductRequest $request | 业务数据（见 Service/Transformer） |
-| POST | `/admin/product/product/export` | export | — | task_id, status（导出任务） |
-| GET | `/admin/product/product/list` | list | — | 分页列表（QueryService::page） |
-| PUT | `/admin/product/product/sort` | updateSort | RequestInterface $request | null 或空 |
-| GET | `/admin/product/product/stats` | stats | — | 统计数据对象 |
-| DELETE | `/admin/product/product/{id:\d+}` | delete | int $id | null 或空 |
-| GET | `/admin/product/product/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/product/product/{id:\d+}` | update | int $id, ProductRequest $request | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/product/product/{id:\d+}/status` | updateStatus | int $id, RequestInterface $request | null 或空 |
-| GET | `/admin/review/by-order/{orderId:\d+}` | byOrder | int $orderId | 业务数据（见 Service/Transformer） |
-| GET | `/admin/review/list` | list | ReviewRequest $request | 分页列表（QueryService::page） |
-| GET | `/admin/review/stats` | stats | — | 统计数据对象 |
-| GET | `/admin/review/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/review/{id:\d+}/approve` | approve | int $id | 空对象 {} |
-| PUT | `/admin/review/{id:\d+}/reject` | reject | int $id | 空对象 {} |
-| PUT | `/admin/review/{id:\d+}/reply` | reply | int $id, ReviewReplyRequest $request | 空对象 {} |
-| DELETE | `/admin/role` | delete | — | 空对象 {} |
-| POST | `/admin/role` | create | RoleRequest $request | 空对象 {} |
-| GET | `/admin/role/list` | pageList | — | 分页列表（QueryService::page） |
-| PUT | `/admin/role/{id}` | save | int $id, RoleRequest $request | 空对象 {} |
-| GET | `/admin/role/{id}/permissions` | getRolePermissionForRole | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/role/{id}/permissions` | batchGrantPermissionsForRole | int $id, BatchGrantPermissionsForRoleRequest $request | 空对象 {} |
-| POST | `/admin/seckill-order/export` | export | — | task_id, status（导出任务） |
-| GET | `/admin/seckill-order/list` | list | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/seckill-order/{activityId:\d+}/orders` | orders | int $activityId | 业务数据（见 Service/Transformer） |
-| POST | `/admin/seckill/activity` | store | SeckillActivityRequest $request | 空对象 {} |
-| POST | `/admin/seckill/activity/export` | export | SeckillActivityRequest $request | task_id, status（导出任务） |
-| GET | `/admin/seckill/activity/list` | list | SeckillActivityRequest $request | 分页列表（QueryService::page） |
-| GET | `/admin/seckill/activity/stats` | stats | — | 统计数据对象 |
-| DELETE | `/admin/seckill/activity/{id:\d+}` | delete | int $id | null 或空 |
-| GET | `/admin/seckill/activity/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/seckill/activity/{id:\d+}` | update | int $id, SeckillActivityRequest $request | 空对象 {} |
-| PUT | `/admin/seckill/activity/{id:\d+}/toggle-status` | toggleStatus | int $id | null 或空 |
-| POST | `/admin/seckill/product` | store | SeckillProductRequest $request | 空对象 {} |
-| POST | `/admin/seckill/product/batch` | batchStore | SeckillProductRequest $request | 空对象 {} |
-| GET | `/admin/seckill/product/by-session/{sessionId:\d+}` | bySession | int $sessionId | 业务数据（见控制器） |
-| GET | `/admin/seckill/product/list` | list | SeckillProductRequest $request | 分页列表（QueryService::page） |
-| DELETE | `/admin/seckill/product/{id:\d+}` | delete | int $id | null 或空 |
-| GET | `/admin/seckill/product/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/seckill/product/{id:\d+}` | update | int $id, SeckillProductRequest $request | 空对象 {} |
-| PUT | `/admin/seckill/product/{id:\d+}/toggle-status` | toggleStatus | int $id | null 或空 |
-| POST | `/admin/seckill/session` | store | SeckillSessionRequest $request | 空对象 {} |
-| GET | `/admin/seckill/session/by-activity/{activityId:\d+}` | byActivity | int $activityId | 业务数据（见控制器） |
-| GET | `/admin/seckill/session/list` | list | SeckillSessionRequest $request | 分页列表（QueryService::page） |
-| DELETE | `/admin/seckill/session/{id:\d+}` | delete | int $id | null 或空 |
-| GET | `/admin/seckill/session/{id:\d+}` | show | int $id | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/seckill/session/{id:\d+}` | update | int $id, SeckillSessionRequest $request | 空对象 {} |
-| PUT | `/admin/seckill/session/{id:\d+}/toggle-status` | toggleStatus | int $id | null 或空 |
-| POST | `/admin/shipping/templates` | store | ShippingTemplateRequest $request | 业务数据（见控制器） |
-| GET | `/admin/shipping/templates/list` | list | ShippingTemplateRequest $request | 分页列表（QueryService::page） |
-| DELETE | `/admin/shipping/templates/{id:\d+}` | destroy | int $id | null 或空 |
-| GET | `/admin/shipping/templates/{id:\d+}` | show | int $id | 业务数据（见控制器） |
-| PUT | `/admin/shipping/templates/{id:\d+}` | update | int $id, ShippingTemplateRequest $request | 空对象 {} |
-| POST | `/admin/system-message/batchSend` | batchSend | — | 对象（见控制器） |
-| DELETE | `/admin/system-message/delete` | delete | — | 对象（见控制器） |
-| GET | `/admin/system-message/index` | index | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/popular` | popular | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/preference/checkDoNotDisturb` | checkDoNotDisturb | — | 对象（见控制器） |
-| GET | `/admin/system-message/preference/defaults` | getDefaults | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/preference/index` | index | — | 业务数据（见 Service/Transformer） |
-| POST | `/admin/system-message/preference/reset` | reset | — | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system-message/preference/setDoNotDisturbTime` | setDoNotDisturbTime | — | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system-message/preference/setMinPriority` | setMinPriority | — | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system-message/preference/toggleDoNotDisturb` | toggleDoNotDisturb | — | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system-message/preference/update` | update | UpdatePreferenceRequest $request | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system-message/preference/updateChannels` | updateChannelPreferences | — | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system-message/preference/updateTypes` | updateTypePreferences | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/read/{id}` | read | int $id | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/recent` | recent | — | 业务数据（见 Service/Transformer） |
-| POST | `/admin/system-message/save` | save | CreateMessageRequest $request | 业务数据（见 Service/Transformer） |
-| POST | `/admin/system-message/schedule` | schedule | — | 对象（见控制器） |
-| GET | `/admin/system-message/search` | search | — | 业务数据（见 Service/Transformer） |
-| POST | `/admin/system-message/send` | send | — | 对象（见控制器） |
-| GET | `/admin/system-message/statistics` | statistics | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/template/active` | getActiveTemplates | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/template/categories` | getCategories | — | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system-message/template/changeStatus` | changeStatus | — | 对象（见控制器） |
-| POST | `/admin/system-message/template/copy` | copy | — | 业务数据（见 Service/Transformer） |
-| DELETE | `/admin/system-message/template/delete` | delete | — | 对象（见控制器） |
-| POST | `/admin/system-message/template/export` | export | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/template/getVariables/{id}` | getVariables | int $id | 业务数据（见 Service/Transformer） |
-| POST | `/admin/system-message/template/import` | import | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/template/index` | index | — | 业务数据（见 Service/Transformer） |
-| POST | `/admin/system-message/template/preview` | preview | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/template/read/{id}` | read | int $id | 业务数据（见 Service/Transformer） |
-| POST | `/admin/system-message/template/render` | render | — | 业务数据（见 Service/Transformer） |
-| POST | `/admin/system-message/template/save` | save | CreateTemplateRequest $request | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/template/search` | search | — | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system-message/template/update/{id}` | update | int $id, UpdateTemplateRequest $request | 业务数据（见 Service/Transformer） |
-| POST | `/admin/system-message/template/validateVariables` | validateVariables | — | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system-message/update/{id}` | update | int $id, UpdateMessageRequest $request | 业务数据（见 Service/Transformer） |
-| DELETE | `/admin/system-message/user/batchDelete` | batchDelete | — | 对象（见控制器） |
-| PUT | `/admin/system-message/user/batchMarkRead` | batchMarkAsRead | — | 对象（见控制器） |
-| DELETE | `/admin/system-message/user/delete/{messageId}` | delete | int $messageId | null 或空 |
-| GET | `/admin/system-message/user/index` | index | — | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system-message/user/markAllRead` | markAllAsRead | — | 对象（见控制器） |
-| PUT | `/admin/system-message/user/markRead/{messageId}` | markAsRead | int $messageId | null 或空 |
-| GET | `/admin/system-message/user/read/{messageId}` | read | int $messageId | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/user/search` | search | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/user/typeStats` | getTypeStats | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system-message/user/unreadCount` | getUnreadCount | — | 对象（见控制器） |
-| GET | `/admin/system/setting/group/{group}` | group | string $group | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system/setting/groups` | groups | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/system/setting/values` | values | ?string $keys = null | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/system/setting/{key}` | update | string $key, SystemSettingRequest $request | 业务数据（见 Service/Transformer） |
-| DELETE | `/admin/user` | delete | — | 空对象 {} |
-| POST | `/admin/user` | create | UserRequest $request | 空对象 {} |
-| PUT | `/admin/user` | updateInfo | UserRequest $request | 空对象 {} |
-| DELETE | `/admin/user-login-log` | delete | RequestInterface $request | 空对象 {} |
-| GET | `/admin/user-login-log/list` | page | — | 业务数据（见 Service/Transformer） |
-| DELETE | `/admin/user-operation-log` | delete | RequestInterface $request | 空对象 {} |
-| GET | `/admin/user-operation-log/list` | page | — | 业务数据（见 Service/Transformer） |
-| GET | `/admin/user/list` | pageList | — | 分页列表（QueryService::page） |
-| PUT | `/admin/user/password` | resetPassword | ResetPasswordRequest $request | 业务数据（见控制器） |
-| PUT | `/admin/user/{userId}` | save | int $userId, UserRequest $request | 空对象 {} |
-| GET | `/admin/user/{userId}/roles` | getUserRole | int $userId | 业务数据（见 Service/Transformer） |
-| PUT | `/admin/user/{userId}/roles` | batchGrantRolesForUser | int $userId, BatchGrantRolesForUserRequest $request | 空对象 {} |
+| 方法 | 路径 | 说明 | 控制器方法 |
+|------|------|------|------------|
+| GET | `/admin/attachment/list` | 列表 | list |
+| POST | `/admin/attachment/upload` | upload | upload |
+| DELETE | `/admin/attachment/{id}` | delete | delete |
+| POST | `/admin/coupon` | 新增 | store |
+| POST | `/admin/coupon/export` | export | export |
+| GET | `/admin/coupon/list` | 列表 | list |
+| GET | `/admin/coupon/stats` | stats | stats |
+| GET | `/admin/coupon/user/list` | 列表 | list |
+| PUT | `/admin/coupon/user/{id:\d+}/mark-expired` | 标记过期 | markExpired |
+| PUT | `/admin/coupon/user/{id:\d+}/mark-used` | 标记已使用 | markUsed |
+| DELETE | `/admin/coupon/{id:\d+}` | 删除优惠券 | delete |
+| GET | `/admin/coupon/{id:\d+}` | 详情 | show |
+| PUT | `/admin/coupon/{id:\d+}` | 更新优惠券 | update |
+| POST | `/admin/coupon/{id:\d+}/issue` | issue | issue |
+| PUT | `/admin/coupon/{id:\d+}/toggle-status` | 切换状态 | toggleStatus |
+| GET | `/admin/dashboard/analysis` | 数据分析页 | analysis |
+| GET | `/admin/dashboard/report` | 多维度统计报表 | report |
+| GET | `/admin/dashboard/welcome` | 商城首页 — 欢迎页 | welcome |
+| DELETE | `/admin/department` | delete | delete |
+| POST | `/admin/department` | create | create |
+| GET | `/admin/department/list` | pageList | pageList |
+| PUT | `/admin/department/{id}` | save | save |
+| POST | `/admin/group-buy` | 新增 | store |
+| POST | `/admin/group-buy-order/export` | export | export |
+| GET | `/admin/group-buy-order/list` | 列表 | list |
+| GET | `/admin/group-buy-order/{activityId:\d+}/orders` | orders | orders |
+| POST | `/admin/group-buy/export` | export | export |
+| GET | `/admin/group-buy/list` | 列表 | list |
+| GET | `/admin/group-buy/stats` | stats | stats |
+| DELETE | `/admin/group-buy/{id:\d+}` | 删除团购活动 | delete |
+| GET | `/admin/group-buy/{id:\d+}` | 详情 | show |
+| PUT | `/admin/group-buy/{id:\d+}` | 更新团购活动 | update |
+| PUT | `/admin/group-buy/{id:\d+}/toggle-status` | 切换状态 | toggleStatus |
+| DELETE | `/admin/leader` | delete | delete |
+| POST | `/admin/leader` | create | create |
+| GET | `/admin/leader/list` | pageList | pageList |
+| POST | `/admin/member/account/wallet/adjust` | 钱包调整 | adjust |
+| GET | `/admin/member/account/wallet/logs` | walletLogs | walletLogs |
+| POST | `/admin/member/level` | 新增 | store |
+| GET | `/admin/member/level/list` | 列表 | list |
+| DELETE | `/admin/member/level/{id:\d+}` | 删除会员等级 | delete |
+| GET | `/admin/member/level/{id:\d+}` | 详情 | show |
+| PUT | `/admin/member/level/{id:\d+}` | 更新会员等级 | update |
+| POST | `/admin/member/member` | 新增 | store |
+| POST | `/admin/member/member/export` | export | export |
+| GET | `/admin/member/member/list` | 列表 | list |
+| GET | `/admin/member/member/overview` | overview | overview |
+| GET | `/admin/member/member/stats` | stats | stats |
+| GET | `/admin/member/member/{id:\d+}` | 详情 | show |
+| PUT | `/admin/member/member/{id:\d+}` | 会员资料已更新 | update |
+| PUT | `/admin/member/member/{id:\d+}/status` | 会员状态已更新 | updateStatus |
+| PUT | `/admin/member/member/{id:\d+}/tags` | 会员标签已更新 | syncTags |
+| POST | `/admin/member/tag` | 新增 | store |
+| GET | `/admin/member/tag/list` | 列表 | list |
+| GET | `/admin/member/tag/options` | options | options |
+| DELETE | `/admin/member/tag/{id:\d+}` | 标签已删除 | delete |
+| PUT | `/admin/member/tag/{id:\d+}` | 标签更新 | update |
+| DELETE | `/admin/menu` | delete | delete |
+| POST | `/admin/menu` | create | create |
+| GET | `/admin/menu/list` | pageList | pageList |
+| PUT | `/admin/menu/{id}` | save | save |
+| GET | `/admin/order/after-sale/list` | 列表 | list |
+| GET | `/admin/order/after-sale/{id:\d+}` | 详情 | show |
+| PUT | `/admin/order/after-sale/{id:\d+}/approve` | approve | approve |
+| PUT | `/admin/order/after-sale/{id:\d+}/complete-exchange` | completeExchange | completeExchange |
+| PUT | `/admin/order/after-sale/{id:\d+}/receive` | 领取 | receive |
+| PUT | `/admin/order/after-sale/{id:\d+}/refund` | refund | refund |
+| PUT | `/admin/order/after-sale/{id:\d+}/reject` | reject | reject |
+| PUT | `/admin/order/after-sale/{id:\d+}/reship` | reship | reship |
+| POST | `/admin/order/order/export` | export | export |
+| GET | `/admin/order/order/list` | 列表 | list |
+| GET | `/admin/order/order/stats` | stats | stats |
+| GET | `/admin/order/order/{id:\d+}` | 详情 | show |
+| PUT | `/admin/order/order/{id:\d+}/cancel` | 订单已取消 | cancel |
+| PUT | `/admin/order/order/{id:\d+}/ship` | 发货 | ship |
+| GET | `/admin/passport/getInfo` | 当前登录用户信息 | getInfo |
+| POST | `/admin/passport/login` | 管理员登录 | login |
+| POST | `/admin/passport/logout` | 退出登录 | logout |
+| POST | `/admin/passport/refresh` | 刷新 Token | refresh |
+| GET | `/admin/permission/menus` | menus | menus |
+| GET | `/admin/permission/roles` | roles | roles |
+| POST | `/admin/permission/update` | 修改 | update |
+| DELETE | `/admin/position` | delete | delete |
+| POST | `/admin/position` | create | create |
+| GET | `/admin/position/list` | pageList | pageList |
+| PUT | `/admin/position/{id}` | save | save |
+| PUT | `/admin/position/{id}/data_permission` | batchDataPermission | batchDataPermission |
+| POST | `/admin/product/brand` | 新增 | store |
+| GET | `/admin/product/brand/list` | 列表 | list |
+| GET | `/admin/product/brand/options` | options | options |
+| PUT | `/admin/product/brand/sort` | 更新排序 | sort |
+| GET | `/admin/product/brand/statistics` | 统计 | statistics |
+| DELETE | `/admin/product/brand/{id:\d+}` | 删除品牌 | delete |
+| GET | `/admin/product/brand/{id:\d+}` | 详情 | show |
+| PUT | `/admin/product/brand/{id:\d+}` | 更新品牌 | update |
+| POST | `/admin/product/category` | 新增 | store |
+| GET | `/admin/product/category/list` | 列表 | list |
+| PUT | `/admin/product/category/move` | 移动分类 | move |
+| GET | `/admin/product/category/options` | options | options |
+| PUT | `/admin/product/category/sort` | 更新排序 | sort |
+| GET | `/admin/product/category/statistics` | 统计 | statistics |
+| GET | `/admin/product/category/tree` | tree | tree |
+| DELETE | `/admin/product/category/{id:\d+}` | 删除分类 | delete |
+| GET | `/admin/product/category/{id:\d+}` | 详情 | show |
+| PUT | `/admin/product/category/{id:\d+}` | 更新分类 | update |
+| GET | `/admin/product/category/{id:\d+}/breadcrumb` | breadcrumb | breadcrumb |
+| POST | `/admin/product/product` | 新增 | store |
+| POST | `/admin/product/product/export` | export | export |
+| GET | `/admin/product/product/list` | 列表 | list |
+| PUT | `/admin/product/product/sort` | 更新排序 | updateSort |
+| GET | `/admin/product/product/stats` | stats | stats |
+| DELETE | `/admin/product/product/{id:\d+}` | 删除商品 | delete |
+| GET | `/admin/product/product/{id:\d+}` | 详情 | show |
+| PUT | `/admin/product/product/{id:\d+}` | 修改 | update |
+| PUT | `/admin/product/product/{id:\d+}/status` | 更新状态 | updateStatus |
+| GET | `/admin/review/by-order/{orderId:\d+}` | byOrder | byOrder |
+| GET | `/admin/review/list` | 列表 | list |
+| GET | `/admin/review/stats` | stats | stats |
+| GET | `/admin/review/{id:\d+}` | 详情 | show |
+| PUT | `/admin/review/{id:\d+}/approve` | 审核通过 | approve |
+| PUT | `/admin/review/{id:\d+}/reject` | 审核拒绝 | reject |
+| PUT | `/admin/review/{id:\d+}/reply` | 回复 | reply |
+| DELETE | `/admin/role` | delete | delete |
+| POST | `/admin/role` | create | create |
+| GET | `/admin/role/list` | pageList | pageList |
+| PUT | `/admin/role/{id}` | save | save |
+| GET | `/admin/role/{id}/permissions` | getRolePermissionForRole | getRolePermissionForRole |
+| PUT | `/admin/role/{id}/permissions` | batchGrantPermissionsForRole | batchGrantPermissionsForRole |
+| POST | `/admin/seckill-order/export` | export | export |
+| GET | `/admin/seckill-order/list` | 列表 | list |
+| GET | `/admin/seckill-order/{activityId:\d+}/orders` | orders | orders |
+| POST | `/admin/seckill/activity` | 新增 | store |
+| POST | `/admin/seckill/activity/export` | export | export |
+| GET | `/admin/seckill/activity/list` | 列表 | list |
+| GET | `/admin/seckill/activity/stats` | stats | stats |
+| DELETE | `/admin/seckill/activity/{id:\d+}` | 删除活动 | delete |
+| GET | `/admin/seckill/activity/{id:\d+}` | 详情 | show |
+| PUT | `/admin/seckill/activity/{id:\d+}` | 更新活动 | update |
+| PUT | `/admin/seckill/activity/{id:\d+}/toggle-status` | 切换状态 | toggleStatus |
+| POST | `/admin/seckill/product` | 新增 | store |
+| POST | `/admin/seckill/product/batch` | batchStore | batchStore |
+| GET | `/admin/seckill/product/by-session/{sessionId:\d+}` | bySession | bySession |
+| GET | `/admin/seckill/product/list` | 列表 | list |
+| DELETE | `/admin/seckill/product/{id:\d+}` | 删除商品 | delete |
+| GET | `/admin/seckill/product/{id:\d+}` | 详情 | show |
+| PUT | `/admin/seckill/product/{id:\d+}` | 更新商品 | update |
+| PUT | `/admin/seckill/product/{id:\d+}/toggle-status` | 切换状态 | toggleStatus |
+| POST | `/admin/seckill/session` | 新增 | store |
+| GET | `/admin/seckill/session/by-activity/{activityId:\d+}` | byActivity | byActivity |
+| GET | `/admin/seckill/session/list` | 列表 | list |
+| DELETE | `/admin/seckill/session/{id:\d+}` | 删除场次 | delete |
+| GET | `/admin/seckill/session/{id:\d+}` | 详情 | show |
+| PUT | `/admin/seckill/session/{id:\d+}` | 更新场次 | update |
+| PUT | `/admin/seckill/session/{id:\d+}/toggle-status` | 切换状态 | toggleStatus |
+| POST | `/admin/shipping/templates` | 新增 | store |
+| GET | `/admin/shipping/templates/list` | 列表 | list |
+| DELETE | `/admin/shipping/templates/{id:\d+}` | 删除运费模板 | destroy |
+| GET | `/admin/shipping/templates/{id:\d+}` | 详情 | show |
+| PUT | `/admin/shipping/templates/{id:\d+}` | 更新运费模板 | update |
+| POST | `/admin/system-message/batchSend` | 批量发送完成 | batchSend |
+| DELETE | `/admin/system-message/delete` | 删除操作完成 | delete |
+| GET | `/admin/system-message/index` | 列表 | index |
+| GET | `/admin/system-message/popular` | popular | popular |
+| GET | `/admin/system-message/preference/checkDoNotDisturb` | checkDoNotDisturb | checkDoNotDisturb |
+| GET | `/admin/system-message/preference/defaults` | getDefaults | getDefaults |
+| GET | `/admin/system-message/preference/index` | 列表 | index |
+| POST | `/admin/system-message/preference/reset` | reset | reset |
+| PUT | `/admin/system-message/preference/setDoNotDisturbTime` | setDoNotDisturbTime | setDoNotDisturbTime |
+| PUT | `/admin/system-message/preference/setMinPriority` | setMinPriority | setMinPriority |
+| PUT | `/admin/system-message/preference/toggleDoNotDisturb` | toggleDoNotDisturb | toggleDoNotDisturb |
+| PUT | `/admin/system-message/preference/update` | 修改 | update |
+| PUT | `/admin/system-message/preference/updateChannels` | updateChannelPreferences | updateChannelPreferences |
+| PUT | `/admin/system-message/preference/updateTypes` | updateTypePreferences | updateTypePreferences |
+| GET | `/admin/system-message/read/{id}` | read | read |
+| GET | `/admin/system-message/recent` | recent | recent |
+| POST | `/admin/system-message/save` | 消息创建 | save |
+| POST | `/admin/system-message/schedule` | 消息调度 | schedule |
+| GET | `/admin/system-message/search` | search | search |
+| POST | `/admin/system-message/send` | 消息发送 | send |
+| GET | `/admin/system-message/statistics` | 统计 | statistics |
+| GET | `/admin/system-message/template/active` | getActiveTemplates | getActiveTemplates |
+| GET | `/admin/system-message/template/categories` | getCategories | getCategories |
+| PUT | `/admin/system-message/template/changeStatus` | changeStatus | changeStatus |
+| POST | `/admin/system-message/template/copy` | copy | copy |
+| DELETE | `/admin/system-message/template/delete` | delete | delete |
+| POST | `/admin/system-message/template/export` | export | export |
+| GET | `/admin/system-message/template/getVariables/{id}` | getVariables | getVariables |
+| POST | `/admin/system-message/template/import` | import | import |
+| GET | `/admin/system-message/template/index` | 列表 | index |
+| POST | `/admin/system-message/template/preview` | 预览 | preview |
+| GET | `/admin/system-message/template/read/{id}` | read | read |
+| POST | `/admin/system-message/template/render` | render | render |
+| POST | `/admin/system-message/template/save` | save | save |
+| GET | `/admin/system-message/template/search` | search | search |
+| PUT | `/admin/system-message/template/update/{id}` | 修改 | update |
+| POST | `/admin/system-message/template/validateVariables` | validateVariables | validateVariables |
+| PUT | `/admin/system-message/update/{id}` | 消息更新 | update |
+| DELETE | `/admin/system-message/user/batchDelete` | batchDelete | batchDelete |
+| PUT | `/admin/system-message/user/batchMarkRead` | batchMarkAsRead | batchMarkAsRead |
+| DELETE | `/admin/system-message/user/delete/{messageId}` | 消息删除 | delete |
+| GET | `/admin/system-message/user/index` | 列表 | index |
+| PUT | `/admin/system-message/user/markAllRead` | markAllAsRead | markAllAsRead |
+| PUT | `/admin/system-message/user/markRead/{messageId}` | 消息已标记为已读 | markAsRead |
+| GET | `/admin/system-message/user/read/{messageId}` | read | read |
+| GET | `/admin/system-message/user/search` | search | search |
+| GET | `/admin/system-message/user/typeStats` | getTypeStats | getTypeStats |
+| GET | `/admin/system-message/user/unreadCount` | getUnreadCount | getUnreadCount |
+| GET | `/admin/system/setting/group/{group}` | group | group |
+| GET | `/admin/system/setting/groups` | 进行中的团列表 | groups |
+| GET | `/admin/system/setting/values` | values | values |
+| PUT | `/admin/system/setting/{key}` | 配置已更新 | update |
+| DELETE | `/admin/user` | delete | delete |
+| POST | `/admin/user` | create | create |
+| PUT | `/admin/user` | updateInfo | updateInfo |
+| DELETE | `/admin/user-login-log` | delete | delete |
+| GET | `/admin/user-login-log/list` | page | page |
+| DELETE | `/admin/user-operation-log` | delete | delete |
+| GET | `/admin/user-operation-log/list` | page | page |
+| GET | `/admin/user/list` | pageList | pageList |
+| PUT | `/admin/user/password` | resetPassword | resetPassword |
+| PUT | `/admin/user/{userId}` | save | save |
+| GET | `/admin/user/{userId}/roles` | getUserRole | getUserRole |
+| PUT | `/admin/user/{userId}/roles` | batchGrantRolesForUser | batchGrantRolesForUser |
 
 
 ### 2.2 登录与权限
@@ -404,7 +404,7 @@ Request 参考：`app/Interface/Admin/Request/Product/*`
 
 ### 2.9 Admin 通用说明
 
-1. **列表接口**：多数为 `GET .../list` 或 `page`，`data` 为分页结构（`list`/`items` + 分页字段），详见 **2.1 总览表「响应 data」列**。
+1. **列表接口**：多数为 `GET .../list` 或 `page`，`data` 为分页结构（`list`/`items` + 分页字段），详见各模块说明。
 2. **详情接口**：`GET .../{id}` 或 `read/{id}`，返回单条实体或 Dto。
 3. **创建/更新**：`POST`/`PUT` 成功常返回空 `{}`、新建 `id` 或完整实体，见各控制器。
 4. **删除**：部分为 `DELETE` + Body 传 `ids`，返回 `{ deleted, failed }` 等。
