@@ -3,7 +3,7 @@
         'name' => 'mineadmin/mineadmin',
         'pretty_version' => 'dev-main',
         'version' => 'dev-main',
-        'reference' => '44d4ccc5547306d51db016862d0d7f79446962cb',
+        'reference' => '6b76cfc24a5240a2018383c1a7625c8cd475d0c1',
         'type' => 'project',
         'install_path' => __DIR__ . '/../../',
         'aliases' => array(),
@@ -937,7 +937,7 @@
         'mineadmin/mineadmin' => array(
             'pretty_version' => 'dev-main',
             'version' => 'dev-main',
-            'reference' => '44d4ccc5547306d51db016862d0d7f79446962cb',
+            'reference' => '6b76cfc24a5240a2018383c1a7625c8cd475d0c1',
             'type' => 'project',
             'install_path' => __DIR__ . '/../../',
             'aliases' => array(),
