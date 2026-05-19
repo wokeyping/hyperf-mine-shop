@@ -81,13 +81,16 @@ foreach ($sections as $group => $dir) {
         );
         foreach ($matches as $m) {
             $sub = $m[2] === '' ? '' : '/' . ltrim($m[2], '/');
+            $action = $m[3];
+            $methodBody = extractMethodBody($content, $action);
             $endpoints[] = [
                 'group' => $group,
                 'method' => strtoupper($m[1]),
                 'path' => $prefix . $sub,
-                'action' => $m[3],
+                'action' => $action,
                 'params' => trim($m[4]),
                 'file' => $rel,
+                'response' => inferResponseHint($methodBody, $content, $action),
             ];
         }
 
@@ -102,6 +105,7 @@ foreach ($sections as $group => $dir) {
                 if (preg_match('/#\[GetMapping[^\]]*\]\s*public function ' . preg_quote($fn, '/') . '\(/s', $content)) {
                     $method = 'GET';
                 }
+                $methodBody = extractMethodBody($content, $fn);
                 $endpoints[] = [
                     'group' => $group,
                     'method' => $method,
@@ -109,6 +113,7 @@ foreach ($sections as $group => $dir) {
                     'action' => $fn,
                     'params' => '',
                     'file' => $rel,
+                    'response' => inferResponseHint($methodBody, $content, $fn),
                 ];
             }
         }
@@ -133,8 +138,9 @@ function buildMarkdown(array $endpoints, string $base): string
     $buf = <<<'MD'
 # MineShop API 接口文档
 
-> 根据 `app/Interface` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成路由清单）。
-> 详细请求/响应字段以各 `Request` 类与 `Transformer` 为准；下文对 C 端核心接口补充了校验规则说明。
+> 根据 `app/Interface` 控制器注解自动生成（`php bin/generate-api-doc.php` 可重新生成）。
+> **2.1 / 3.1 总览表含「响应 data」列**（由控制器 `return` 推断）；精细字段以各 `Request`、`Transformer`、`Dto` 为准。
+> 下文对 C 端核心接口补充了请求校验与典型响应说明。
 
 **基础地址**
 
@@ -268,12 +274,29 @@ MD;
 | phone | string | 是 | 手机号 `1[3-9]xxxxxxxxx` |
 | password | string | 是 | 最少 6 位 |
 
+**响应 `data`**（同小程序登录）
+
+| 字段 | 说明 |
+|------|------|
+| token | 访问令牌 |
+| refresh_token | 刷新令牌 |
+| expires_in | 过期秒数 |
+| member | id、phone、nickname、avatar、source |
+
 #### POST `/api/v1/auth/captcha` — 发送验证码
 
 | 字段 | 类型 | 必填 | 说明 |
 |------|------|------|------|
 | phone | string | 是 | 手机号 |
 | scene | string | 是 | `register` \| `forgot_password` |
+
+**响应 `data`**
+
+| 字段 | 说明 |
+|------|------|
+| phone | 手机号 |
+| scene | 场景 |
+| code | 仅调试环境可能返回验证码明文 |
 
 #### POST `/api/v1/auth/register` — 注册
 
@@ -284,13 +307,24 @@ MD;
 | password_confirmation | string | 是 | 确认密码 |
 | code | string | 是 | 6 位验证码 |
 
+**响应 `data`**（同登录）：`token`、`refresh_token`、`expires_in`、`member`
+
 #### POST `/api/v1/auth/forgotPassword` — 忘记密码
 
 同注册字段（phone、password、password_confirmation、code）。
 
+**响应 `data`**：空对象 `{}`
+
 #### GET `/api/v1/auth/register/protocols` — 注册协议文案
 
 无请求体。
+
+**响应 `data`**
+
+| 字段 | 说明 |
+|------|------|
+| userAgreement | 用户协议 HTML/文本 |
+| privacyPolicy | 隐私政策 HTML/文本 |
 
 ---
 
@@ -300,9 +334,25 @@ MD;
 
 需 Token。
 
+**响应 `data`**
+
+| 字段 | 说明 |
+|------|------|
+| member | 见 `MemberProfileTransformer`：id、avatar、nickname、phone、gender、level_name、level、balance、points、authorized_profile、invite_code |
+
 #### GET `/api/v1/member/center` — 个人中心聚合数据
 
 需 Token。
+
+**响应 `data`**（见 `MemberCenterTransformer`）
+
+| 字段 | 说明 |
+|------|------|
+| userInfo | 头像、昵称、手机、等级、余额、积分、邀请码等 |
+| countsData | 余额/积分/优惠券数量卡片 |
+| orderTagInfos | 待付款、待发货、待收货、待评价、售后角标 |
+| customerServiceInfo | 客服电话、服务时间 |
+| referralCount | 推荐人数 |
 
 #### POST `/api/v1/member/profile/update` — 更新资料
 
@@ -313,13 +363,29 @@ MD;
 | gender | int | 否 | 0/1/2 |
 | phone | string | 否 | 手机号 |
 
+**响应 `data`**：空对象 `{}`（成功后建议再调 `profile` 拉最新资料）
+
+#### POST `/api/v1/member/profile/authorize` — 授权头像昵称
+
+**响应 `data`**：空对象 `{}`
+
 #### POST `/api/v1/member/phone/bind` — 绑定手机号
 
-见 `PhoneAuthorizeRequest`（code 等微信手机号组件参数）。
+见 `PhoneAuthorizeRequest`（微信手机号组件 `code`）。
+
+**响应 `data`**
+
+| 字段 | 说明 |
+|------|------|
+| phone_number | 带区号手机号 |
+| pure_phone_number | 纯手机号 |
+| country_code | 国家码 |
 
 #### GET `/api/v1/member/invite/qrcode` — 邀请二维码
 
-需 Token。
+需 Token。Query 可选 `page`（小程序页面路径）。
+
+**响应 `data`**：含小程序码 URL/Base64 等（见 `AppApiMemberReferralQueryService`）
 
 #### GET `/api/v1/member/wallet/transactions` — 钱包流水
 
@@ -329,18 +395,25 @@ MD;
 | page | int | 否 | 页码，默认 1 |
 | page_size | int | 否 | 每页条数，最大 100 |
 
+**响应 `data`**
+
+| 字段 | 说明 |
+|------|------|
+| list | 流水记录数组 |
+| total | 总条数 |
+
 ---
 
 ### 2.4 收货地址 `/api/v1/member/addresses`
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `` | 地址列表 |
-| GET | `/{id}` | 地址详情 |
-| POST | `` | 新增 |
-| PUT | `/{id}` | 修改 |
-| DELETE | `/{id}` | 删除 |
-| POST | `/{id}/default` | 设为默认 |
+| 方法 | 路径 | 说明 | 响应 `data` |
+|------|------|------|-------------|
+| GET | `` | 地址列表 | `list[]`，见 `MemberAddressTransformer` |
+| GET | `/{id}` | 地址详情 | 单条地址对象 |
+| POST | `` | 新增 | 单条地址对象 |
+| PUT | `/{id}` | 修改 | 单条地址对象 |
+| DELETE | `/{id}` | 删除 | 空对象 `{}` |
+| POST | `/{id}/default` | 设为默认 | 空对象 `{}` |
 
 **新增/修改 Body**
 
@@ -366,21 +439,27 @@ MD;
 | is_recommend / is_hot / is_new | bool | 筛选 |
 | page / page_size | int | 分页 |
 
+**响应 `data`**：分页 `list[]` + `pagination`（见 `ProductTransformer::transformListItem`）
+
 #### GET `/api/v1/products/{id}` — 商品详情
 
+**响应 `data`**：商品详情对象（见 `ProductTransformer::transformDetail`）
+
 #### GET `/api/v1/categories` — 分类树/列表
+
+**响应 `data`**：`list` 为分类树（见 `CategoryTransformer::transformTree`）
 
 ---
 
 ### 2.6 购物车 `/api/v1/cart`
 
-| 方法 | 路径 | Body / 说明 |
-|------|------|-------------|
-| GET | `` | 购物车列表 |
-| POST | `items` | `sku_id`(必填), `quantity`(1-999) |
-| PUT | `items/{skuId}` | `quantity` |
-| DELETE | `items/{skuId}` | 删除单项 |
-| POST | `clear-invalid` | 清理失效商品 |
+| 方法 | 路径 | Body / 说明 | 响应 `data` |
+|------|------|-------------|-------------|
+| GET | `` | 购物车列表 | 见 `CartTransformer`（商品行、金额汇总等） |
+| POST | `items` | `sku_id`(必填), `quantity`(1-999) | 同 GET 结构 |
+| PUT | `items/{skuId}` | `quantity` | 同 GET 结构 |
+| DELETE | `items/{skuId}` | 删除单项 | 同 GET 结构 |
+| POST | `clear-invalid` | 清理失效商品 | 同 GET 结构 |
 
 ---
 
@@ -443,7 +522,7 @@ MD;
 | order_no | string | 是 | 订单号 |
 | pay_method | string | 是 | `wechat` \| `balance` |
 
-微信返回调起支付参数；余额直接扣款。
+**响应 `data`**：微信返回调起支付参数（timeStamp、nonceStr、package 等）；余额支付返回扣款结果对象。
 
 #### GET `list` — 订单列表
 
@@ -452,45 +531,59 @@ MD;
 | status | `all` \| `pending` \| `paid` \| `shipped` \| `completed` \| `after_sale` |
 | page / page_size | 分页 |
 
+**响应 `data`**：分页 `list[]` + `pagination`（见 `OrderTransformer::transform`）
+
 #### GET `detail/{orderNo}` — 订单详情
+
+**响应 `data`**：见 `OrderTransformer::transformDetail`
 
 #### GET `logistics/{orderNo}` — 物流轨迹
 
+**响应 `data`**：物流公司、运单号、轨迹节点列表等
+
 #### GET `statistics` — 各状态订单数量
 
+**响应 `data`**：各状态订单数量统计对象
+
 #### GET `pay-info/{orderNo}` — 待支付订单支付信息
+
+**响应 `data`**：应付金额、可用支付方式等
 
 #### POST `cancel` — 取消订单
 
 Body: `{ "order_no": "..." }`
 
+**响应 `data`**：空对象 `{}`
+
 #### POST `confirm-receipt` — 确认收货
 
 Body: `{ "order_no": "..." }`
+
+**响应 `data`**：空对象 `{}`
 
 ---
 
 ### 2.8 优惠券
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/v1/coupons/available` | 可领/可用券，`spu_id`、`limit` |
-| GET | `/api/v1/coupons/{id}` | 券详情 |
-| GET | `/api/v1/member/coupons` | 我的优惠券 |
-| POST | `/api/v1/member/coupons/receive` | 领取，Body: `coupon_id` |
+| 方法 | 路径 | 说明 | 响应 `data` |
+|------|------|------|-------------|
+| GET | `/api/v1/coupons/available` | 可领/可用券，`spu_id`、`limit` | `list[]`、`total` |
+| GET | `/api/v1/coupons/{id}` | 券详情 | 券对象 |
+| GET | `/api/v1/member/coupons` | 我的优惠券 | `list[]` |
+| POST | `/api/v1/member/coupons/receive` | 领取，Body: `coupon_id` | `{ message: "领取成功" }` |
 
 ---
 
 ### 2.9 秒杀 / 拼团
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/v1/seckill/sessions` | 秒杀场次列表 |
-| GET | `/api/v1/seckill/products` | 场次商品列表 |
-| GET | `/api/v1/seckill/products/{sessionId}/{spuId}` | 秒杀商品详情 |
-| GET | `/api/v1/group-buy/products` | 拼团活动商品 |
-| GET | `/api/v1/group-buy/products/{activityId}/groups` | 进行中的团 |
-| GET | `/api/v1/group-buy/products/{activityId}/{spuId}` | 拼团商品详情 |
+| 方法 | 路径 | 说明 | 响应 `data` |
+|------|------|------|-------------|
+| GET | `/api/v1/seckill/sessions` | 秒杀场次列表 | 场次列表（Transformer） |
+| GET | `/api/v1/seckill/products` | 场次商品列表 | 商品列表 |
+| GET | `/api/v1/seckill/products/{sessionId}/{spuId}` | 秒杀商品详情 | 商品详情 |
+| GET | `/api/v1/group-buy/products` | 拼团活动商品 | 活动商品列表 |
+| GET | `/api/v1/group-buy/products/{activityId}/groups` | 进行中的团 | `{ list: 团列表 }` |
+| GET | `/api/v1/group-buy/products/{activityId}/{spuId}` | 拼团商品详情 | 商品+活动详情 |
 
 下单时 `order_type` 分别为 `seckill`、`group_buy`。
 
@@ -498,17 +591,17 @@ Body: `{ "order_no": "..." }`
 
 ### 2.10 售后 `/api/v1/after-sales`
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `eligibility` | 可申请售后的订单项 |
-| POST | `` | 申请售后 |
-| GET | `` | 售后列表 |
-| GET | `{id}` | 详情 |
-| GET | `{id}/return-logistics` | 退货物流 |
-| GET | `{id}/reship-logistics` | 换货发货物流 |
-| POST | `{id}/cancel` | 取消申请 |
-| POST | `{id}/return-shipment` | 提交退货物流 |
-| POST | `{id}/confirm-exchange-received` | 确认换货收货 |
+| 方法 | 路径 | 说明 | 响应 `data` |
+|------|------|------|-------------|
+| GET | `eligibility` | 可申请售后的订单项 | 可申请项列表 |
+| POST | `` | 申请售后 | 见 `AfterSaleTransformer` |
+| GET | `` | 售后列表 | 分页 list + pagination |
+| GET | `{id}` | 详情 | 售后单详情 |
+| GET | `{id}/return-logistics` | 退货物流 | 物流信息 |
+| GET | `{id}/reship-logistics` | 换货发货物流 | 物流信息 |
+| POST | `{id}/cancel` | 取消申请 | 空对象 `{}` |
+| POST | `{id}/return-shipment` | 提交退货物流 | 空对象 `{}` |
+| POST | `{id}/confirm-exchange-received` | 确认换货收货 | 空对象 `{}` |
 
 **申请售后 Body**
 
@@ -528,12 +621,12 @@ Body: `{ "order_no": "..." }`
 
 ### 2.11 评价 `/api/v1/review`
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `` | 提交评价（需 Token） |
-| GET | `product/{id}` | 商品评价列表 |
-| GET | `product/{id}/stats` | 评价统计 |
-| GET | `product/{id}/summary` | 评价摘要 |
+| 方法 | 路径 | 说明 | 响应 `data` |
+|------|------|------|-------------|
+| POST | `` | 提交评价（需 Token） | `{ id: 评价ID }` |
+| GET | `product/{id}` | 商品评价列表 | 见 `ReviewTransformer::transformListResult` |
+| GET | `product/{id}/stats` | 评价统计 | 各星级数量等 |
+| GET | `product/{id}/summary` | 评价摘要 | 见 `ReviewTransformer::transformSummaryResult` |
 
 **提交评价 Body**: `rating`(1-5), `content`, `images[]`, `order_id`, `order_item_id`, `is_anonymous`
 
@@ -541,13 +634,13 @@ Body: `{ "order_no": "..." }`
 
 ### 2.12 其他 C 端接口
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| GET | `/api/v1/home` | 首页数据（Banner、推荐等） |
-| POST | `/api/v1/upload/image` | 图片上传（multipart） |
-| GET | `/api/v1/geo/regions` | 省市区数据，支持 parent_code 等查询参数 |
-| POST | `/api/v1/payment/wechat/pay-notify` | 微信支付回调（微信服务器调用，非 JSON Result） |
-| POST | `/api/v1/payment/wechat/refund-notify` | 退款回调 |
+| 方法 | 路径 | 说明 | 响应 `data` |
+|------|------|------|-------------|
+| GET | `/api/v1/home` | 首页数据（Banner、推荐等） | 见 `HomeTransformer` |
+| POST | `/api/v1/upload/image` | 图片上传（multipart） | `url` 等附件信息 |
+| GET | `/api/v1/geo/regions` | 省市区，Query: `parent_code` 等 | `list[]` 区划节点 |
+| POST | `/api/v1/payment/wechat/pay-notify` | 微信回调 | 非标准 Result，返回微信要求格式 |
+| POST | `/api/v1/payment/wechat/refund-notify` | 退款回调 | 同上 |
 
 ---
 
@@ -565,15 +658,15 @@ MD;
 
 ### 3.2 登录与权限
 
-| 方法 | 路径 | 说明 |
-|------|------|------|
-| POST | `/admin/passport/login` | 登录 |
-| POST | `/admin/passport/logout` | 退出 |
-| GET | `/admin/passport/getInfo` | 当前用户信息与菜单 |
-| POST | `/admin/passport/refresh` | 刷新 Token |
-| GET | `/admin/permission/menus` | 当前用户菜单树 |
-| GET | `/admin/permission/roles` | 角色选项 |
-| POST | `/admin/permission/update` | 更新权限相关 |
+| 方法 | 路径 | 说明 | 响应 `data` |
+|------|------|------|-------------|
+| POST | `/admin/passport/login` | 登录 | `access_token`、`refresh_token`、`expire_at` |
+| POST | `/admin/passport/logout` | 退出 | 空对象 `{}` |
+| GET | `/admin/passport/getInfo` | 当前用户 | username、nickname、avatar、phone、email 等 |
+| POST | `/admin/passport/refresh` | 刷新 Token | 同 login |
+| GET | `/admin/permission/menus` | 菜单树 | 菜单数组 |
+| GET | `/admin/permission/roles` | 角色选项 | 角色列表 |
+| POST | `/admin/permission/update` | 更新权限 | 见控制器返回 |
 
 ### 3.3 用户 / 角色 / 菜单 / 部门 / 岗位
 
@@ -659,11 +752,12 @@ Request 参考：`app/Interface/Admin/Request/Product/*`
 
 ### 3.9 Admin 通用说明
 
-1. **列表接口**：多数为 `GET .../list`，查询参数定义在对应 `*Request::listRules()` 中；常含 `page`、`page_size` 或 MineAdmin 分页字段。
-2. **创建/更新**：`POST`/`PUT` 使用 JSON Body，规则见 `*Request::saveRules()` / `updateRules()` 或 DTO。
-3. **删除**：部分为 `DELETE` + Body 传 `ids` 数组（见 `DeleteRequest`）。
-4. **导出**：`POST .../export` 通常触发异步导出任务（export-center 插件），返回任务 ID。
-5. **权限码**：控制器上 `#[Permission(code: '...')]`，前端按钮需与之后端一致。
+1. **列表接口**：多数为 `GET .../list` 或 `page`，`data` 为分页结构（`list`/`items` + 分页字段），详见 **3.1 总览表「响应 data」列**。
+2. **详情接口**：`GET .../{id}` 或 `read/{id}`，返回单条实体或 Dto。
+3. **创建/更新**：`POST`/`PUT` 成功常返回空 `{}`、新建 `id` 或完整实体，见各控制器。
+4. **删除**：部分为 `DELETE` + Body 传 `ids`，返回 `{ deleted, failed }` 等。
+5. **导出**：`POST .../export` 通常返回 `{ task_id, status }`。
+6. **权限码**：控制器上 `#[Permission(code: '...')]`，前端按钮需与之后端一致。
 
 ---
 
@@ -691,24 +785,148 @@ MD;
     return $buf;
 }
 
-function renderTable(array $endpoints): string
+function extractMethodBody(string $content, string $methodName): string
 {
-    $lines = "| 方法 | 路径 | 控制器方法 | 请求类/参数 |\n|------|------|------------|-------------|\n";
-    foreach ($endpoints as $e) {
-        $params = $e['params'] !== '' ? $e['params'] : '—';
-        // shorten long param lists
-        if (strlen($params) > 80) {
-            $params = preg_replace('/\$request[^,)]*/', 'Request', $params);
-            if (strlen($params) > 80) {
-                $params = substr($params, 0, 77) . '...';
+    if (! preg_match('/function\s+' . preg_quote($methodName, '/') . '\s*\([^)]*\)[^{]*\{/s', $content, $m, PREG_OFFSET_CAPTURE)) {
+        return '';
+    }
+    $start = (int) $m[0][1] + strlen($m[0][0]) - 1;
+    $depth = 0;
+    $len = strlen($content);
+    for ($i = $start; $i < $len; ++$i) {
+        $ch = $content[$i];
+        if ($ch === '{') {
+            ++$depth;
+        } elseif ($ch === '}') {
+            --$depth;
+            if ($depth === 0) {
+                return substr($content, $start, $i - $start + 1);
             }
         }
+    }
+
+    return '';
+}
+
+function inferResponseHint(string $methodBody, string $controllerSource, string $action): string
+{
+    if ($methodBody === '') {
+        return '见控制器';
+    }
+
+    if (! preg_match('/return\s+\$this->(success|successWith\w+|fail|error|json)\s*\(/', $methodBody)
+        && preg_match('/return\s+response\s*\(/', $methodBody)) {
+        return '非标准 Result（如支付回调 XML/文本）';
+    }
+
+    $knownActions = [
+        'miniApp' => 'token, refresh_token, expires_in, member',
+        'h5Password' => 'token, refresh_token, expires_in, member',
+        'register' => 'token, refresh_token, expires_in, member',
+        'captcha' => 'phone, scene, code?(调试)',
+        'forgotPassword' => '空对象 {}',
+        'registerProtocols' => 'userAgreement, privacyPolicy',
+        'profile' => 'member（MemberProfileTransformer）',
+        'center' => 'userInfo, countsData, orderTagInfos…',
+        'updateProfile' => '空对象 {}',
+        'authorizeProfile' => '空对象 {}',
+        'bindPhone' => 'phone_number, pure_phone_number, country_code',
+        'transactions' => 'list[], total',
+        'login' => 'access_token, refresh_token, expire_at',
+        'refresh' => 'access_token, refresh_token, expire_at',
+        'logout' => '空对象 {}',
+        'getInfo' => '用户基本信息字段',
+    ];
+    if (isset($knownActions[$action])) {
+        return $knownActions[$action];
+    }
+
+    if (strpos($methodBody, 'successWithPaginator') !== false) {
+        return 'list[] + pagination';
+    }
+    if (strpos($methodBody, 'successWithArrayList') !== false) {
+        if (preg_match('/(\w+Transformer)->transform/', $methodBody, $tm)) {
+            return 'list[]（' . $tm[1] . '）';
+        }
+
+        return 'list[]（+ 可选 total）';
+    }
+    if (strpos($methodBody, 'successWithTransform') !== false) {
+        if (preg_match('/(\w+Transformer)->transform/', $methodBody, $tm)) {
+            return $tm[1] . ' 对象';
+        }
+
+        return '业务对象（Transformer）';
+    }
+    if (preg_match('/success\(\s*\[\]\s*[,)]/', $methodBody) || preg_match('/success\(\s*\[\]\s*\)/', $methodBody)) {
+        return '空对象 {}';
+    }
+    if (preg_match('/success\(\s*null/', $methodBody)) {
+        return 'null 或空';
+    }
+    if (preg_match('/success\(\)\s*;/', $methodBody)) {
+        return '空对象 {}';
+    }
+    if (preg_match('/->toArray\(\)/', $methodBody) && preg_match('/TokenPair|authCommandService->(login|refresh)/', $methodBody . $controllerSource)) {
+        return 'access_token, refresh_token, expire_at';
+    }
+    if (preg_match('/(\w+Transformer)->transform/', $methodBody, $tm)) {
+        return '见 ' . $tm[1];
+    }
+    if (preg_match('/success\(\s*\$this->(\w+Transformer)/', $methodBody, $tm)) {
+        return '见 ' . $tm[1];
+    }
+    if (preg_match('/success\(\s*\[\s*[\'"]member[\'"]/', $methodBody)) {
+        return 'member（MemberProfileTransformer）';
+    }
+    if (preg_match('/success\(\s*\[\s*[\'"]id[\'"]/', $methodBody)) {
+        return '{ id } 或含 id 的对象';
+    }
+    if (preg_match('/success\(\s*\[\s*[\'"]list[\'"]/', $methodBody) || preg_match('/success\(\s*\[\s*[\'"]message[\'"]/', $methodBody)) {
+        return '对象（见控制器内联数组）';
+    }
+    if (preg_match('/success\(\s*\$this->\w+(Query)?Service->page\(/', $methodBody)) {
+        return '分页列表（QueryService::page）';
+    }
+    if (preg_match('/success\(\s*\$this->\w+Service->stats\(/', $methodBody)) {
+        return '统计数据对象';
+    }
+    if (strpos($methodBody, 'task_id') !== false) {
+        return 'task_id, status（导出任务）';
+    }
+    if (preg_match('/success\(\s*\[/', $methodBody)) {
+        return '对象（见控制器）';
+    }
+    if (preg_match('/success\(\s*\$/', $methodBody)) {
+        return '业务数据（见 Service/Transformer）';
+    }
+
+    return '业务数据（见控制器）';
+}
+
+function renderTable(array $endpoints): string
+{
+    $lines = "| 方法 | 路径 | 控制器方法 | 请求类/参数 | 响应 `data` |\n";
+    $lines .= "|------|------|------------|-------------|-------------|\n";
+    foreach ($endpoints as $e) {
+        $params = $e['params'] !== '' ? $e['params'] : '—';
+        if (strlen($params) > 60) {
+            $params = preg_replace('/\$request[^,)]*/', 'Request', $params);
+            if (strlen($params) > 60) {
+                $params = substr($params, 0, 57) . '...';
+            }
+        }
+        $response = $e['response'] ?? '见控制器';
+        if (strlen($response) > 72) {
+            $response = substr($response, 0, 69) . '...';
+        }
         $lines .= sprintf(
-            "| %s | `%s` | %s | %s |\n",
+            "| %s | `%s` | %s | %s | %s |\n",
             $e['method'],
             $e['path'],
             $e['action'],
-            $params === '' ? '—' : $params
+            $params === '' ? '—' : $params,
+            $response
         );
     }
     return $lines . "\n";
