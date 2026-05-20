@@ -96,10 +96,11 @@ final class EasySmsVerificationService implements SmsVerificationServiceInterfac
         $smsConfig = $integration->smsConfig();
         $template = (string) ($smsConfig['template_code'] ?? $smsConfig['template_id'] ?? $integration->smsTemplate());
 
+        $paramKey = $this->smsTemplateParamKey($smsConfig);
         $payload = [
             'template' => $template,
-            'data' => ['code' => $code],
-            'content' => str_replace(['{{$code}}', '{$code}'], $code, $integration->smsTemplate()),
+            'data' => [$paramKey => $code],
+            'content' => $this->replaceSmsTemplatePlaceholders($integration->smsTemplate(), $paramKey, $code),
         ];
 
         try {
@@ -150,6 +151,42 @@ final class EasySmsVerificationService implements SmsVerificationServiceInterfac
                 ],
             ],
         ];
+    }
+
+    /**
+     * 与阿里云/腾讯云模板中 ${xxx} 的变量名一致，默认 code.
+     *
+     * @param array<string, mixed> $smsConfig
+     */
+    private function smsTemplateParamKey(array $smsConfig): string
+    {
+        $raw = trim((string) ($smsConfig['template_param_key'] ?? 'code'));
+        if ($raw === '') {
+            return 'code';
+        }
+        if (! preg_match('/^[a-zA-Z_][a-zA-Z0-9_]{0,31}$/', $raw)) {
+            return 'code';
+        }
+
+        return $raw;
+    }
+
+    private function replaceSmsTemplatePlaceholders(string $template, string $paramKey, string $code): string
+    {
+        $pairs = [
+            '{{$' . $paramKey . '}}',
+            '{$' . $paramKey . '}',
+            '{{$code}}',
+            '{$code}',
+        ];
+        $search = [];
+        foreach ($pairs as $p) {
+            if (! in_array($p, $search, true)) {
+                $search[] = $p;
+            }
+        }
+
+        return str_replace($search, $code, $template);
     }
 
     private function isNonProduction(): bool

@@ -241,6 +241,11 @@ return [
                                 'label' => '默认模板 CODE',
                                 'placeholder' => '可选，传入默认模板编号',
                             ],
+                            [
+                                'key' => 'template_param_key',
+                                'label' => '模板变量名',
+                                'placeholder' => '与阿里云模板中 ${xxx} 的 xxx 一致，如 code、number',
+                            ],
                         ],
                     ],
                     'default' => [
@@ -248,6 +253,7 @@ return [
                         'access_key_secret' => '',
                         'sign_name' => '',
                         'template_code' => '',
+                        'template_param_key' => 'code',
                     ],
                     'sort' => 20,
                 ],
@@ -286,7 +292,7 @@ return [
                 ],
                 'mall.integration.sms_template' => [
                     'label' => '短信验证码模板',
-                    'description' => '支持变量 {{$code}}。',
+                    'description' => '站内展示用，支持 {{$code}} 等；须与「配置参数」里模板变量名一致（如阿里云为 ${number} 则写 {{$number}}）。',
                     'type' => 'input',
                     'meta' => [
                         'display_span' => ['compact'],
