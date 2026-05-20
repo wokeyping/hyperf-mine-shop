@@ -17,7 +17,6 @@ final class EasySmsVerificationService implements SmsVerificationServiceInterfac
 {
     private const CODE_TTL = 300;
     private const RESEND_INTERVAL = 60;
-    private const DAILY_LIMIT = 10;
     private const CACHE_PREFIX = '/plugin/sms/verification';
 
     public function __construct(
@@ -30,7 +29,6 @@ final class EasySmsVerificationService implements SmsVerificationServiceInterfac
         $this->assertCanSend($phone, $scene);
 
         $code = str_pad((string) random_int(0, 999999), 6, '0', STR_PAD_LEFT);
-        $this->storeVerificationCode($phone, $scene, $code);
 
         $result = [
             'phone' => $phone,
@@ -38,12 +36,16 @@ final class EasySmsVerificationService implements SmsVerificationServiceInterfac
         ];
 
         if ($this->isNonProduction()) {
+            $this->storeVerificationCode($phone, $scene, $code);
             $result['code'] = $code;
             logger()->info('sms verification code generated in non-production mode', compact('phone', 'scene', 'code'));
             return $result;
         }
 
+        // 仅发送成功后再落库并计次，避免网关失败仍占满每日额度
         $this->dispatchSms($phone, $code);
+        $this->storeVerificationCode($phone, $scene, $code);
+
         return $result;
     }
 
@@ -65,7 +67,7 @@ final class EasySmsVerificationService implements SmsVerificationServiceInterfac
         }
 
         $dailyCount = (int) ($this->redis()->get($this->dailyLimitKey($phone)) ?? 0);
-        if ($dailyCount >= self::DAILY_LIMIT) {
+        if ($dailyCount >= $this->dailySendLimit()) {
             throw new BusinessException(ResultCode::UNPROCESSABLE_ENTITY, '今日验证码发送次数已达上限');
         }
     }
