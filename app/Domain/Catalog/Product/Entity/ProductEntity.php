@@ -170,7 +170,15 @@ final class ProductEntity
             $this->setAttributes($attributes);
         }
 
-        // 同步价格范围
+        // 商品级展示价（后台「价格与展示」步骤，单位：分）
+        if ($input->getMinPrice() !== null) {
+            $this->setMinPrice((int) round($input->getMinPrice()));
+        }
+        if ($input->getMaxPrice() !== null) {
+            $this->setMaxPrice((int) round($input->getMaxPrice()));
+        }
+
+        // 同步价格范围：若 SKU 已有有效售价则以 SKU 为准，否则保留上方商品级价格
         $this->syncPriceRange();
 
         return $this;
@@ -291,7 +299,15 @@ final class ProductEntity
             $this->setAttributes($attributes);
         }
 
-        // 同步价格范围
+        // 商品级展示价（后台表单传入，单位：分）
+        if ($input->getMinPrice() !== null) {
+            $this->setMinPrice((int) round($input->getMinPrice()));
+        }
+        if ($input->getMaxPrice() !== null) {
+            $this->setMaxPrice((int) round($input->getMaxPrice()));
+        }
+
+        // 存在任一 SKU 售价 > 0 时，以 SKU 推导区间；否则保留请求中的商品级价格
         $this->syncPriceRange();
 
         // 检测变更
@@ -714,8 +730,18 @@ final class ProductEntity
     {
         $skus = $this->getSkus();
         if ($skus === null || $skus === []) {
-            $this->setMinPrice(0);
-            $this->setMaxPrice(0);
+            return;
+        }
+
+        $hasPositiveSalePrice = false;
+        foreach ($skus as $sku) {
+            if ($sku->getSalePrice() > 0) {
+                $hasPositiveSalePrice = true;
+                break;
+            }
+        }
+
+        if (! $hasPositiveSalePrice) {
             return;
         }
 

@@ -93,6 +93,18 @@ export default function Category() {
     });
   };
 
+  /** 当前分类下没有子分类时，直接进入该分类的商品列表（商品可挂在父级分类上） */
+  const goGoodsListForCategory = (cat: CategoryGroup) => {
+    const categoryId = cat.groupId || '';
+    if (!categoryId) {
+      return;
+    }
+    const categoryName = encodeURIComponent(cat.name || '');
+    Taro.navigateTo({
+      url: `/pages/goods/list/index?categoryId=${categoryId}&categoryName=${categoryName}`,
+    });
+  };
+
   const activeCategory = categories[activeIndex];
   const items = activeCategory ? getLeafItems(activeCategory) : [];
 
@@ -168,7 +180,20 @@ export default function Category() {
 
         {items.length === 0 && !loading && (
           <View className="category-content__empty">
-            <Text className="category-content__empty-text">暂无商品</Text>
+            <Text className="category-content__empty-text">
+              暂无子分类
+            </Text>
+            <Text className="category-content__empty-hint">
+              此处展示子分类；未添加子分类时为空。可在后台为「{activeCategory?.name || '该分类'}」增加子分类，或点击下方查看本分类商品。
+            </Text>
+            {activeCategory?.groupId ? (
+              <View
+                className="category-content__empty-btn"
+                onClick={() => goGoodsListForCategory(activeCategory)}
+              >
+                <Text className="category-content__empty-btn-text">查看该分类商品</Text>
+              </View>
+            ) : null}
           </View>
         )}
       </ScrollView>
