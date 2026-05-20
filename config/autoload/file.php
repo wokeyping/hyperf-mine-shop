@@ -18,7 +18,7 @@ use Hyperf\Filesystem\Adapter\QiniuAdapterFactory;
 use Hyperf\Filesystem\Adapter\S3AdapterFactory;
 
 return [
-    'default' => 'qiniu',
+    'default' => 'local',
     'storage' => [
         'local' => [
             'driver' => LocalAdapterFactory::class,
