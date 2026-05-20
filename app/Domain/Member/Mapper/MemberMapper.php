@@ -54,6 +54,9 @@ final class MemberMapper
 
     public static function fillRegisterInput(MemberEntity $entity, RegisterInput $input): MemberEntity
     {
+        // 手机号注册无微信身份，openid 置空（需 DB 列为可空）
+        $entity->setOpenid(null);
+
         $entity->setPhone($input->getPhone());
         if ($entity->getNickname() === null || trim((string) $entity->getNickname()) === '') {
             $entity->setNickname('用户' . substr($input->getPhone(), -4));

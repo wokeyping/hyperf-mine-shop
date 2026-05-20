@@ -24,7 +24,7 @@ use Hyperf\DbConnection\Model\Model;
 
 /**
  * @property int $id
- * @property string $openid
+ * @property null|string $openid
  * @property null|string $unionid
  * @property null|string $nickname
  * @property null|string $avatar
