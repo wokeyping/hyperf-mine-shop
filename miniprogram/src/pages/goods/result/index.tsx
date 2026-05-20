@@ -2,6 +2,7 @@ import { View, Text } from '@tarojs/components';
 import Taro, { useReachBottom } from '@tarojs/taro';
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { SearchBar } from '@nutui/nutui-react-taro';
+import { addCartItem } from '../../../services/cart/cart';
 import { getSearchResult } from '../../../services/good/fetchSearchResult';
 import { addSearchHistory } from '../../../services/good/fetchSearchHistory';
 import GoodsList from '../../../components/GoodsList';
@@ -115,6 +116,24 @@ export default function ResultPage() {
     Taro.navigateTo({ url: `/pages/goods/details/index?spuId=${spuId}` });
   }, []);
 
+  const handleAddCart = useCallback(async (goods: any) => {
+    const skuId =
+      goods.skuId ??
+      goods.defaultSkuId ??
+      goods.sku_id ??
+      '';
+    if (!skuId) {
+      handleGoodsClick(goods);
+      return;
+    }
+    try {
+      await addCartItem({ skuId, quantity: 1 });
+      Taro.showToast({ title: '已加入购物车', icon: 'success' });
+    } catch (error: any) {
+      Taro.showToast({ title: error?.msg || '加入购物车失败', icon: 'none' });
+    }
+  }, [handleGoodsClick]);
+
   const handleRetry = useCallback(() => {
     loadData(false);
   }, [loadData]);
@@ -176,8 +195,10 @@ export default function ResultPage() {
               originPrice: item.originPrice ?? item.maxLinePrice ?? 0,
               tags: item.tags || [],
               spuId: item.spuId,
+              skuId: item.defaultSkuId ?? item.skuId ?? item.sku_id,
             }))}
             onClickGoods={handleGoodsClick}
+            onAddCart={handleAddCart}
           />
         </View>
       )}
