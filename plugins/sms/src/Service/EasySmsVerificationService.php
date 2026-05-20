@@ -157,6 +157,14 @@ final class EasySmsVerificationService implements SmsVerificationServiceInterfac
         return env('APP_ENV', 'dev') !== 'production';
     }
 
+    /**
+     * 每手机号每日成功发送验证码上限（环境变量 SMS_VERIFICATION_DAILY_LIMIT，默认 10）.
+     */
+    private function dailySendLimit(): int
+    {
+        return max(1, (int) env('SMS_VERIFICATION_DAILY_LIMIT', 10));
+    }
+
     private function secondsUntilDayEnd(): int
     {
         $tomorrow = strtotime('tomorrow');
