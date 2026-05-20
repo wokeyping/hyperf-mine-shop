@@ -54,9 +54,11 @@ services:
       - APP_NAME=MineAdmin
       # 覆盖 Dockerfile 默认的 APP_ENV=prod，取值与项目根目录 .env 一致
       - APP_ENV=${APP_ENV:-dev}
+    # 开发：热重载（改 app/config/plugins/.env 后约 2s 内自动重启，无需手动 restart）
+    # 若容器内报缺少 server:watch，请在宿主机执行 composer install（勿加 --no-dev）
     command:
       - sh
       - -c
       - |
         ln -sf /usr/share/zoneinfo/Asia/Shanghai /etc/localtime
-        tail -F /dev/null
+        exec php bin/hyperf.php server:watch
