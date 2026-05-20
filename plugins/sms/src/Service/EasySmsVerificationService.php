@@ -9,6 +9,7 @@ use App\Infrastructure\Abstract\ICache;
 use App\Infrastructure\Exception\System\BusinessException;
 use App\Interface\Common\ResultCode;
 use Overtrue\EasySms\EasySms;
+use Overtrue\EasySms\Exceptions\NoGatewayAvailableException;
 use Overtrue\EasySms\Strategies\OrderStrategy;
 use Plugin\Sms\Contract\SmsVerificationServiceInterface;
 
@@ -99,7 +100,23 @@ final class EasySmsVerificationService implements SmsVerificationServiceInterfac
             'content' => str_replace(['{{$code}}', '{$code}'], $code, $integration->smsTemplate()),
         ];
 
-        $sms->send($phone, $payload);
+        try {
+            $sms->send($phone, $payload);
+        } catch (NoGatewayAvailableException $e) {
+            $details = [];
+            foreach ($e->getExceptions() as $gateway => $inner) {
+                $details[$gateway] = $inner instanceof \Throwable
+                    ? $inner::class . ': ' . $inner->getMessage()
+                    : (string) $inner;
+            }
+            logger()->error('sms gateway send failed', [
+                'phone' => $phone,
+                'provider' => $integration->smsProvider(),
+                'template' => $template,
+                'gateways' => $details,
+            ]);
+            throw $e;
+        }
     }
 
     /**
