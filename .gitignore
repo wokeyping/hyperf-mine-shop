@@ -29,3 +29,5 @@ docs/superpowers
 .worktrees/
 web/.codex
 #claude.md
+#.cursor/
+#.claude/
