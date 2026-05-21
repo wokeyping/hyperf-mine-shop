@@ -1,0 +1,44 @@
+---
+description: 新增或修改 HTTP 接口时必须同步 API 接口文档
+globs: app/Interface/**/*.php,API接口文档*.md,bin/generate-api-doc.php
+alwaysApply: false
+---
+
+# API 接口文档（必做）
+
+新增、修改、删除 `app/Interface` 下的 Controller/路由时，**同一 PR/任务内**必须更新接口文档。
+
+## 更新哪个文件
+
+| 端 | 代码 | 文档 |
+|----|------|------|
+| 小程序/C 端 | `app/Interface/Api/**` | `API接口文档-Api.md` |
+| 管理后台 | `app/Interface/Admin/**` | `API接口文档-Admin.md` |
+| 索引 | — | 仅路由大规模变更时改 `API接口文档.md` |
+
+## 必写内容（§2.2 详细说明，勿只改总览表）
+
+每个受影响接口需包含：
+
+1. **请求**：`METHOD` + 完整路径 + 中文说明
+2. **入参**：Query / Path / Body 表格（字段、类型、必填、说明），与对应 `Request::*Rules()` 一致
+3. **出参**：`响应 data` 字段表或 JSON 示例；分页写 `list`/`pagination` 等
+4. **鉴权**：是否 Token、签名、permission 码
+
+字段以代码为准：`Request`、`Transformer`、`Dto`。格式参照文档内同模块已有 `#### METHOD /path` 小节。
+
+## 总览表
+
+改 Controller 注解后执行：
+
+```bash
+php bin/generate-api-doc.php
+```
+
+同步 §2.1 接口总览表；再在 §2.2 及之后**手写**该接口的入参/出参（脚本不生成详细字段）。
+
+## 完成标准
+
+- §2.1 含新/改路由
+- §2.2+ 有该接口的请求参数与响应说明
+- 与 `Request`/`Transformer`/`Dto` 实现一致，无「待补充」占位（除非用户明确只要骨架）

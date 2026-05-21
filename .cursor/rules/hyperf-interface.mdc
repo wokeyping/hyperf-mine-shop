@@ -29,3 +29,5 @@ alwaysApply: false
 - `app/Interface/Api/V1/` — 小程序，对接 `AppApi*Service`
 
 新增接口时：先定 Contract/DTO，再补 Application 与 Domain，最后 Controller + Request。
+
+同步更新接口文档见 **api-documentation** 规则（`API接口文档-Api.md` / `API接口文档-Admin.md`）。
