@@ -114,6 +114,15 @@ API 路由版本化：`#[AutoController(prefix: '/api/v1/login')]`
 - Model 缓存通过 `RedisHandler`，TTL 7 天
 - RBAC 使用 Casbin 规则表
 
+## 开发工作流规则
+
+1. **数据库变更必须写迁移**：任何涉及数据库 schema 的变更（新增表、新增/修改字段、索引、外键等），必须同步在 `databases/migrations/` 下创建迁移文件，不得直接手动修改数据库，确保环境间的一致性和可追溯性。
+2. **代码修改后的操作命令顺序**：
+   - 后端 PHP 代码修改后：`composer cs-fix`（格式化）→ `composer analyse`（静态分析）→ 重启服务（`docker compose restart hyperf` 或 `composer dev`）
+   - 前端 Vue 代码修改后：`cd web && npm run lint`（检查）→ `npm run build`（构建验证）
+   - 数据库迁移变更后：`php bin/hyperf.php migrate`（执行迁移）
+3. **新增 API 接口必须写文档**：新增接口时必须同步更新对应的接口文档（`API接口文档.md`、`API接口文档-Api.md`、`API接口文档-Admin.md`），文档需包含：请求路径与方法、请求参数（含类型和说明）、返回数据结构。
+
 ## 代码规范
 
 - 所有 PHP 文件必须 `declare(strict_types=1)`
