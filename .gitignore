@@ -28,3 +28,4 @@ web/*.lock
 docs/superpowers
 .worktrees/
 web/.codex
+#claude.md
