@@ -51,7 +51,7 @@ final class ProductRepository extends IRepository
     {
         $result = $this->buildApiListQuery($params)->paginate(
             perPage: $pageSize,
-            pageName: static::PER_PAGE_PARAM_NAME,
+            pageName: self::PER_PAGE_PARAM_NAME,
             page: $page,
         );
 
@@ -100,6 +100,17 @@ final class ProductRepository extends IRepository
                     if ($skuModel) {
                         $skuModel->fill($skuData);
                         $skuModel->save();
+                    }
+                } elseif ($sku->getSkuCode() !== null) {
+                    // 兜底：通过 sku_code 查找已有记录进行更新
+                    $skuModel = $model->skus()->where('sku_code', $sku->getSkuCode())->first();
+                    if ($skuModel) {
+                        unset($skuData['id']);
+                        $skuModel->fill($skuData);
+                        $skuModel->save();
+                    } else {
+                        unset($skuData['id']);
+                        $model->skus()->create($skuData);
                     }
                 } else {
                     // 创建新的 SKU（移除 id 字段）
