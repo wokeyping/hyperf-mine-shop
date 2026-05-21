@@ -7,13 +7,22 @@ alwaysApply: true
 
 ## 一、表结构 / 初始数据（强制）
 
-凡**新增表、改字段、改索引、需要可重复执行的初始数据**，必须改 `databases/`，禁止只改 Model 或手改线上库。
+凡**动到库表结构**（含增删改字段、改类型、改索引、删表）或**需要可重复执行的初始数据**，必须改 `databases/`，禁止只改 Model、`$fillable` 或手改线上库。
 
-| 场景 | 位置 | 禁止 |
-|------|------|------|
-| 新表 | `databases/migrations/` 新建迁移，`Schema::create` | 仅加 Model 不建迁移 |
-| 改字段/索引 | 新建迁移，`Schema::table` | 修改**已执行过**的旧迁移文件 |
-| 初始/演示数据 | `databases/seeders/` | 在业务代码里写死一次性 INSERT |
+| 场景 | 迁移写法 | 禁止 |
+|------|----------|------|
+| 新表 | 新建迁移，`Schema::create` | 仅加 Model 不建迁移 |
+| **新增字段** | 新建迁移，`Schema::table` → `$table->xxx()` | 只改 Model 不加迁移 |
+| **修改字段**（类型/长度、`nullable`、`default`、`comment`） | 新建迁移，`$table->xxx()->change()`（需 `doctrine/dbal`） | 改旧迁移、或直接 `ALTER` 生产库 |
+| **重命名字段** | 新建迁移，`$table->renameColumn('old', 'new')` | 删旧列再建新列（会丢数据） |
+| **删除字段** | 新建迁移，`$table->dropColumn('xxx')` 或 `dropColumn([...])` | 仅从 Model 去掉属性 |
+| 索引（增/删/改） | 新建迁移，`index` / `unique` / `dropIndex` 等 | 同上 |
+| 删表 | 新建迁移，`Schema::dropIfExists`；`down()` 视情况 `create` 回滚 | 线上手动 `DROP` |
+| 初始/演示数据 | `databases/seeders/` | 业务代码里一次性 INSERT |
+
+**删改字段同样要 `migrate`：** 与加字段一样，改完迁移后执行 `php bin/hyperf.php migrate`（Docker 见下文 `docker compose exec hyperf ...`）。生产环境删列/改类型前先确认数据兼容与备份。
+
+**`down()`：** 尽量写可逆逻辑（如 `dropColumn` 对应 `up` 里补回列），便于回滚；破坏性操作在注释里说明。
 
 **生成骨架（项目根目录）：**
 
@@ -24,7 +33,7 @@ php bin/hyperf.php gen:seeder XxxSeeder
 
 **约定：** 文件名 `YYYY_MM_DD_HHMMSS_snake_case.php`；`declare(strict_types=1);`；表/字段加 `comment()`；同步检查 `app/Infrastructure/Model/` 表名与字段。
 
-**AI 行为：** 用户或任务涉及加表/加字段/种子数据时，**先**在 `databases/` 写好迁移（及必要时 Seeder），再改 Domain/Model/Controller；收尾时按下文给出完整命令。
+**AI 行为：** 涉及加表、**改字段、删字段**、改索引、删表或种子数据时，**先**在 `databases/` 写好迁移（及必要时 Seeder），再改 Model/Domain/Controller；收尾时按下文给出完整命令。
 
 ---
 
