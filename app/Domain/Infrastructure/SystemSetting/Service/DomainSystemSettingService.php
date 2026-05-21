@@ -75,7 +75,7 @@ final class DomainSystemSettingService extends IService
             $this->repository->findByGroup($group)
         );
 
-        $settingsCache = Json::encode($settings, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
+        $settingsCache = Json::encode(self::sanitizeForUtf8($settings), \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
 
         $this->cache->set($cacheKey, $settingsCache, 3600);
 
@@ -247,7 +247,7 @@ final class DomainSystemSettingService extends IService
             return [];
         }
 
-        $payload = $entity->toResponse();
+        $payload = self::sanitizeForUtf8($entity->toResponse());
         $this->cache->set($cacheKey, Json::encode($payload, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR), 3600);
 
         return $payload;
@@ -273,5 +273,22 @@ final class DomainSystemSettingService extends IService
     private function groupCacheKey(string $group): string
     {
         return \sprintf('group:%s', $group);
+    }
+
+    /**
+     * 递归清理非 UTF-8 字符.
+     */
+    private static function sanitizeForUtf8(mixed $data): mixed
+    {
+        if (\is_array($data)) {
+            foreach ($data as $key => $value) {
+                $data[$key] = self::sanitizeForUtf8($value);
+            }
+            return $data;
+        }
+        if (\is_string($data) && ! mb_check_encoding($data, 'UTF-8')) {
+            return mb_convert_encoding($data, 'UTF-8', 'UTF-8');
+        }
+        return $data;
     }
 }

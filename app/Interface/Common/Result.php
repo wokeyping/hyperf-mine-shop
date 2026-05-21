@@ -37,7 +37,24 @@ class Result implements Arrayable
         return [
             'code' => $this->code->value,
             'message' => $this->message,
-            'data' => $this->data,
+            'data' => self::ensureUtf8($this->data),
         ];
+    }
+
+    /**
+     * 递归确保数据为合法 UTF-8 编码.
+     */
+    private static function ensureUtf8(mixed $data): mixed
+    {
+        if (\is_array($data)) {
+            foreach ($data as $key => $value) {
+                $data[$key] = self::ensureUtf8($value);
+            }
+            return $data;
+        }
+        if (\is_string($data) && ! mb_check_encoding($data, 'UTF-8')) {
+            return mb_convert_encoding($data, 'UTF-8', 'UTF-8');
+        }
+        return $data;
     }
 }

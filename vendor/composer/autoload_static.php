@@ -1773,6 +1773,7 @@ class ComposerStaticInitc9be68d258bf80b8d44742547858947b
         'App\\Interface\\Api\\Transformer\\Seckill\\SeckillProductTransformer' => __DIR__ . '/../..' . '/app/Interface/Api/Transformer/Seckill/SeckillProductTransformer.php',
         'App\\Interface\\Api\\Transformer\\Seckill\\SeckillSessionTransformer' => __DIR__ . '/../..' . '/app/Interface/Api/Transformer/Seckill/SeckillSessionTransformer.php',
         'App\\Interface\\Common\\Controller\\AbstractController' => __DIR__ . '/../..' . '/app/Interface/Common/Controller/AbstractController.php',
+        'App\\Interface\\Common\\Controller\\LocalUploadFileController' => __DIR__ . '/../..' . '/app/Interface/Common/Controller/LocalUploadFileController.php',
         'App\\Interface\\Common\\Controller\\SystemMessageAbstractController' => __DIR__ . '/../..' . '/app/Interface/Common/Controller/SystemMessageAbstractController.php',
         'App\\Interface\\Common\\CurrentMember' => __DIR__ . '/../..' . '/app/Interface/Common/CurrentMember.php',
         'App\\Interface\\Common\\CurrentUser' => __DIR__ . '/../..' . '/app/Interface/Common/CurrentUser.php',

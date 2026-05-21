@@ -18,6 +18,8 @@ use App\Infrastructure\Model\Product\ProductSku;
 
 final class CartTransformer
 {
+    private ?string $cachedStoreName = null;
+
     public function __construct(private readonly DomainMallSettingService $mallSettingService) {}
 
     /**
@@ -77,7 +79,7 @@ final class CartTransformer
     {
         return [
             'storeId' => '1',
-            'storeName' => $this->mallSettingService->basic()->mallName(),
+            'storeName' => $this->safeStoreName(),
             'storeStatus' => 1,
             'totalDiscountSalePrice' => '0',
             'promotionGoodsList' => [
@@ -111,7 +113,7 @@ final class CartTransformer
             'uid' => (string) $memberId,
             'saasId' => 'mine-mall',
             'storeId' => '1',
-            'storeName' => $this->mallSettingService->basic()->mallName(),
+            'storeName' => $this->safeStoreName(),
             'spuId' => (string) ($product['id'] ?? ''),
             'skuId' => (string) ($sku['id'] ?? ''),
             'isSelected' => 1,
@@ -224,5 +226,20 @@ final class CartTransformer
     {
         return ((string) ($product['status'] ?? '')) === Product::STATUS_ACTIVE
             && ((string) ($sku['status'] ?? '')) === ProductSku::STATUS_ACTIVE;
+    }
+
+    private function safeStoreName(): string
+    {
+        if ($this->cachedStoreName !== null) {
+            return $this->cachedStoreName;
+        }
+
+        $name = $this->mallSettingService->basic()->mallName();
+        if (! mb_check_encoding($name, 'UTF-8')) {
+            $name = mb_convert_encoding($name, 'UTF-8', 'UTF-8');
+        }
+        $this->cachedStoreName = $name;
+
+        return $name;
     }
 }

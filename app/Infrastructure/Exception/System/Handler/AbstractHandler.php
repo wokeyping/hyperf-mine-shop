@@ -93,11 +93,40 @@ abstract class AbstractHandler extends ExceptionHandler
             $result = $result->toArray();
             $result['throwable'] = Context::get(self::class . '.throwable');
             return $responsePlus
-                ->setBody(new SwooleStream(Json::encode($result)));
+                ->setBody(new SwooleStream(self::safeJsonEncode($result)));
         }
 
         return $responsePlus
-            ->setBody(new SwooleStream(Json::encode($result)));
+            ->setBody(new SwooleStream(self::safeJsonEncode($result->toArray())));
+    }
+
+    /**
+     * 安全的 JSON 编码，自动清理非 UTF-8 字符.
+     */
+    private static function safeJsonEncode(mixed $data): string
+    {
+        try {
+            return Json::encode($data);
+        } catch (\Throwable) {
+            return Json::encode(self::sanitizeForUtf8($data));
+        }
+    }
+
+    /**
+     * 递归清理非 UTF-8 字符.
+     */
+    private static function sanitizeForUtf8(mixed $data): mixed
+    {
+        if (\is_array($data)) {
+            foreach ($data as $key => $value) {
+                $data[$key] = self::sanitizeForUtf8($value);
+            }
+            return $data;
+        }
+        if (\is_string($data) && ! mb_check_encoding($data, 'UTF-8')) {
+            return mb_convert_encoding($data, 'UTF-8', 'UTF-8');
+        }
+        return $data;
     }
 
     /**

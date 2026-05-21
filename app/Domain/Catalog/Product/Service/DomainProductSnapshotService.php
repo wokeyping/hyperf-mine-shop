@@ -292,7 +292,10 @@ final class DomainProductSnapshotService implements ProductSnapshotInterface
      */
     private function persistProduct(int $productId, array $payload): void
     {
-        $encoded = Json::encode($payload, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
+        $encoded = Json::encode(
+            self::sanitizeForUtf8($payload),
+            \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR
+        );
         $this->cache->set($this->productKey($productId), $encoded);
     }
 
@@ -304,8 +307,29 @@ final class DomainProductSnapshotService implements ProductSnapshotInterface
      */
     private function persistSku(int $skuId, array $payload): void
     {
-        $encoded = Json::encode($payload, \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR);
+        $encoded = Json::encode(
+            self::sanitizeForUtf8($payload),
+            \JSON_UNESCAPED_UNICODE | \JSON_UNESCAPED_SLASHES | \JSON_THROW_ON_ERROR
+        );
         $this->cache->set($this->skuKey($skuId), $encoded);
+    }
+
+    /**
+     * 递归清理数组中的非 UTF-8 字符.
+     *
+     * @param array<string, mixed> $data
+     * @return array<string, mixed>
+     */
+    private static function sanitizeForUtf8(array $data): array
+    {
+        foreach ($data as $key => $value) {
+            if (\is_array($value)) {
+                $data[$key] = self::sanitizeForUtf8($value);
+            } elseif (\is_string($value) && ! mb_check_encoding($value, 'UTF-8')) {
+                $data[$key] = mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+            }
+        }
+        return $data;
     }
 
     /**
@@ -364,9 +388,12 @@ final class DomainProductSnapshotService implements ProductSnapshotInterface
     {
         try {
             $decoded = json_decode($raw, true, 512, \JSON_THROW_ON_ERROR);
-            return \is_array($decoded) ? $decoded : null;
+            return \is_array($decoded) ? self::sanitizeForUtf8($decoded) : null;
         } catch (\JsonException) {
-            return null;
+            // 缓存数据损坏，尝试清理后重新解码
+            $cleaned = mb_convert_encoding($raw, 'UTF-8', 'UTF-8');
+            $decoded = json_decode($cleaned, true);
+            return \is_array($decoded) ? self::sanitizeForUtf8($decoded) : null;
         }
     }
 

@@ -740,6 +740,7 @@ return array(
     'App\\Interface\\Api\\Transformer\\Seckill\\SeckillProductTransformer' => $baseDir . '/app/Interface/Api/Transformer/Seckill/SeckillProductTransformer.php',
     'App\\Interface\\Api\\Transformer\\Seckill\\SeckillSessionTransformer' => $baseDir . '/app/Interface/Api/Transformer/Seckill/SeckillSessionTransformer.php',
     'App\\Interface\\Common\\Controller\\AbstractController' => $baseDir . '/app/Interface/Common/Controller/AbstractController.php',
+    'App\\Interface\\Common\\Controller\\LocalUploadFileController' => $baseDir . '/app/Interface/Common/Controller/LocalUploadFileController.php',
     'App\\Interface\\Common\\Controller\\SystemMessageAbstractController' => $baseDir . '/app/Interface/Common/Controller/SystemMessageAbstractController.php',
     'App\\Interface\\Common\\CurrentMember' => $baseDir . '/app/Interface/Common/CurrentMember.php',
     'App\\Interface\\Common\\CurrentUser' => $baseDir . '/app/Interface/Common/CurrentUser.php',
