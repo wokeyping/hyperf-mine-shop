@@ -170,7 +170,7 @@ export default function Category() {
                   className="category-card__img"
                   src={item.thumbnail}
                   mode="aspectFill"
-                  lazyLoad
+                  lazyLoad={!isH5()}
                 />
               </View>
               <Text className="category-card__name">{item.name}</Text>

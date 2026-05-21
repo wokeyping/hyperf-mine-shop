@@ -1,5 +1,6 @@
 import { View, Text, Image } from '@tarojs/components';
 import { useMemo } from 'react';
+import { isH5 } from '../../common/platform';
 import Price from '../Price';
 import './index.scss';
 
@@ -51,7 +52,7 @@ export default function GoodsCard({
               className="goods-card__img"
               src={data.thumb}
               mode="aspectFill"
-              lazyLoad
+              lazyLoad={!isH5()}
             />
           )}
         </View>
