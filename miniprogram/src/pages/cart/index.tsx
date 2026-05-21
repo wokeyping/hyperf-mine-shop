@@ -23,6 +23,7 @@ interface CartGoods {
   stockQuantity: number;
   specInfo?: string;
   selected: boolean;
+  outOfStock: boolean;
 }
 
 interface CartStore {
@@ -82,6 +83,7 @@ function normalizeGoods(raw: any, store: any): CartGoods {
     stockQuantity: Number(raw?.stockQuantity ?? raw?.stock ?? 99),
     specInfo: formatSpecInfo(raw?.specInfo || raw?.specText || raw?.spec_info || ''),
     selected: Boolean(raw?.isSelected ?? raw?.selected ?? true),
+    outOfStock: Boolean(raw?.outOfStock ?? ((raw?.stockQuantity ?? raw?.stock) === 0)),
   };
 }
 
@@ -109,6 +111,9 @@ export default function Cart() {
             (promotion.goodsPromotionList || []).forEach((goods: any) => {
               items.push(normalizeGoods(goods, store));
             });
+          });
+          (store.shortageGoodsList || []).forEach((goods: any) => {
+            items.push({ ...normalizeGoods(goods, store), outOfStock: true });
           });
           return {
             id: String(store?.storeId || store?.id || ''),
@@ -153,10 +158,11 @@ export default function Cart() {
   });
 
   const items = useMemo(() => stores.flatMap(store => store.items), [stores]);
-  const selectedItems = useMemo(() => items.filter(item => item.selected), [items]);
+  const availableItems = useMemo(() => items.filter(item => !item.outOfStock), [items]);
+  const selectedItems = useMemo(() => availableItems.filter(item => item.selected), [availableItems]);
   const totalAmount = useMemo(() => selectedItems.reduce((sum, item) => sum + item.price * item.quantity, 0), [selectedItems]);
   const totalCount = useMemo(() => selectedItems.reduce((sum, item) => sum + item.quantity, 0), [selectedItems]);
-  const isAllSelected = useMemo(() => items.length > 0 && selectedItems.length === items.length, [items, selectedItems]);
+  const isAllSelected = useMemo(() => availableItems.length > 0 && selectedItems.length === availableItems.length, [availableItems, selectedItems]);
 
   const updateLocalQuantity = useCallback((skuId: string, quantity: number) => {
     setStores(prev => prev.map(store => ({
@@ -168,17 +174,18 @@ export default function Cart() {
   const toggleItemSelected = useCallback((skuId: string) => {
     setStores(prev => prev.map(store => ({
       ...store,
-      items: store.items.map(item => (item.skuId === skuId ? { ...item, selected: !item.selected } : item)),
+      items: store.items.map(item => (item.skuId === skuId && !item.outOfStock ? { ...item, selected: !item.selected } : item)),
     })));
   }, []);
 
   const toggleStoreSelected = useCallback((storeId: string) => {
     setStores((prev) => prev.map((store) => {
       if (store.id !== storeId) return store;
-      const nextSelected = !store.items.every(item => item.selected);
+      const availableStoreItems = store.items.filter(item => !item.outOfStock);
+      const nextSelected = availableStoreItems.length > 0 && !availableStoreItems.every(item => item.selected);
       return {
         ...store,
-        items: store.items.map(item => ({ ...item, selected: nextSelected })),
+        items: store.items.map(item => (item.outOfStock ? item : { ...item, selected: nextSelected })),
       };
     }));
   }, []);
@@ -187,11 +194,12 @@ export default function Cart() {
     const nextSelected = !isAllSelected;
     setStores(prev => prev.map(store => ({
       ...store,
-      items: store.items.map(item => ({ ...item, selected: nextSelected })),
+      items: store.items.map(item => (item.outOfStock ? item : { ...item, selected: nextSelected })),
     })));
   }, [isAllSelected]);
 
   const changeQuantity = async (item: CartGoods, delta: number) => {
+    if (item.outOfStock) return;
     const next = item.quantity + delta;
     if (next < 1) return;
     if (next > item.stockQuantity) {
@@ -256,7 +264,8 @@ export default function Cart() {
       <PageNav title="购物车" showBack={false} />
       <View className="cart-list">
         {stores.map((store) => {
-          const storeSelected = store.items.every(item => item.selected);
+          const storeAvailableItems = store.items.filter(item => !item.outOfStock);
+          const storeSelected = storeAvailableItems.length > 0 && storeAvailableItems.every(item => item.selected);
           return (
             <View key={store.id} className="cart-store">
               <View className="cart-store__header" onClick={() => toggleStoreSelected(store.id)}>
@@ -279,6 +288,7 @@ export default function Cart() {
                   <View className="cart-goods-item__info">
                     <Text className="cart-goods-item__title">{item.title}</Text>
                     {item.specInfo ? <Text className="cart-goods-item__spec">{item.specInfo}</Text> : null}
+                    {item.outOfStock ? <Text className="cart-goods-item__out-of-stock">库存不足</Text> : null}
                     <View className="cart-goods-item__bottom">
                       <View>
                         <Text className="cart-goods-item__price">
@@ -364,7 +374,7 @@ export default function Cart() {
               if (totalCount === 0) return;
               const goodsRequestList = stores
                 .flatMap((store) => store.items)
-                .filter((item) => item.selected)
+                .filter((item) => item.selected && !item.outOfStock)
                 .map((item) => ({
                   skuId: item.skuId,
                   quantity: item.quantity,

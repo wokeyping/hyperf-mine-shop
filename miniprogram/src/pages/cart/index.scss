@@ -161,6 +161,16 @@
     white-space: nowrap;
   }
 
+  &__out-of-stock {
+    display: inline-block;
+    margin-top: 8rpx;
+    padding: 4rpx 16rpx;
+    border-radius: 8rpx;
+    background: #fff0f0;
+    color: #e4393c;
+    font-size: 22rpx;
+  }
+
   &__bottom {
     margin-top: auto;
     display: flex;
@@ -538,6 +548,13 @@
 }
 
 .cart-page--h5 .cart-goods-item__spec {
+  margin-top: 4PX;
+  padding: 2PX 8PX;
+  border-radius: 4PX;
+  font-size: 11PX;
+}
+
+.cart-page--h5 .cart-goods-item__out-of-stock {
   margin-top: 4PX;
   padding: 2PX 8PX;
   border-radius: 4PX;
