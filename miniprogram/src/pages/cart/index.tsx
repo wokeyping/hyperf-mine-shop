@@ -44,7 +44,7 @@ interface RecommendGoods {
 function normalizePrice(value: any): number {
   const price = Number(value ?? 0);
   if (!Number.isFinite(price)) return 0;
-  return price > 999 ? price / 100 : price;
+  return price / 100;
 }
 
 function formatSpecInfo(specInfo: any): string {
