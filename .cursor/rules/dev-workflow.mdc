@@ -1,0 +1,127 @@
+---
+description: 数据库迁移约定与改完代码后的执行命令顺序（Docker / 本机）
+alwaysApply: true
+---
+
+# 开发工作流：数据库 + 改后必跑命令
+
+## 一、表结构 / 初始数据（强制）
+
+凡**新增表、改字段、改索引、需要可重复执行的初始数据**，必须改 `databases/`，禁止只改 Model 或手改线上库。
+
+| 场景 | 位置 | 禁止 |
+|------|------|------|
+| 新表 | `databases/migrations/` 新建迁移，`Schema::create` | 仅加 Model 不建迁移 |
+| 改字段/索引 | 新建迁移，`Schema::table` | 修改**已执行过**的旧迁移文件 |
+| 初始/演示数据 | `databases/seeders/` | 在业务代码里写死一次性 INSERT |
+
+**生成骨架（项目根目录）：**
+
+```bash
+php bin/hyperf.php gen:migration add_xxx_to_yyy_table
+php bin/hyperf.php gen:seeder XxxSeeder
+```
+
+**约定：** 文件名 `YYYY_MM_DD_HHMMSS_snake_case.php`；`declare(strict_types=1);`；表/字段加 `comment()`；同步检查 `app/Infrastructure/Model/` 表名与字段。
+
+**AI 行为：** 用户或任务涉及加表/加字段/种子数据时，**先**在 `databases/` 写好迁移（及必要时 Seeder），再改 Domain/Model/Controller；收尾时按下文给出完整命令。
+
+---
+
+## 二、改完代码后：按改动类型执行（顺序）
+
+完成编码后，在回复中列出**本次改动实际需要的命令**（完整路径，按顺序）。未改动的步骤不要写。
+
+### 环境 A：Docker（推荐，与 `docker-compose.yml` 一致）
+
+MySQL `localhost:3309`，Redis `6380`，Hyperf `9501`，容器内工作目录 `/www`。
+
+**首次 / 依赖变更：**
+
+```bash
+docker compose up -d
+docker compose exec hyperf composer install
+docker compose exec hyperf php bin/hyperf.php migrate
+docker compose exec hyperf php bin/hyperf.php db:seed
+```
+
+**日常开发（后端已由 `server:watch` 热重载，一般无需手动重启）：**
+
+```bash
+docker compose up -d
+```
+
+**按改动追加（在 `up -d` 之后、按需）：**
+
+| 改动 | 命令（按顺序） |
+|------|----------------|
+| 新增/修改 `databases/migrations/` | `docker compose exec hyperf php bin/hyperf.php migrate` |
+| 新增/修改 `databases/seeders/` 且需灌数 | `docker compose exec hyperf php bin/hyperf.php db:seed` |
+| 根目录 `composer.json` / `composer.lock` | `docker compose exec hyperf composer install` → 必要时 `docker compose restart hyperf` |
+| `config/`、`plugins/`、`.env` | 通常 watch 自动重启；不生效时：`docker compose restart hyperf` |
+| 仅 `app/` PHP（无迁移、无配置） | 无额外命令（watch 已覆盖） |
+| `web/` 前端 | `cd web && npm install`（仅 package 变更）→ `cd web && npm run dev` |
+| `miniprogram/` | `cd miniprogram && npm install`（仅 package 变更）→ `cd miniprogram && npm run dev:weapp` |
+| 提交前自检（后端） | `docker compose exec hyperf composer cs-fix` → `docker compose exec hyperf composer analyse` → `docker compose exec hyperf composer test` |
+| 提交前自检（管理端） | `cd web && npm run lint` |
+
+### 环境 B：本机 PHP（不用 Docker 容器跑 Hyperf）
+
+**首次：**
+
+```bash
+composer install
+cp .env.example .env
+php bin/hyperf.php migrate
+php bin/hyperf.php db:seed
+composer dev
+```
+
+**另开终端 — 管理端：**
+
+```bash
+cd web && npm install && npm run dev
+```
+
+**按改动追加：**
+
+| 改动 | 命令（按顺序） |
+|------|----------------|
+| 迁移文件 | `php bin/hyperf.php migrate` |
+| 种子文件 | `php bin/hyperf.php db:seed` |
+| `composer.json` | `composer install` → 重启 `composer dev` |
+| `config/`、`.env` | 重启 `composer dev`（Ctrl+C 后重新执行） |
+| 仅 `app/` PHP | 若 `composer dev` 已在跑：无额外命令 |
+| `web/` / `miniprogram/` | 同 Docker 表（本机直接 `npm`，无需 `docker compose exec`） |
+| 提交前自检 | `composer cs-fix` → `composer analyse` → `composer test`；`cd web && npm run lint` |
+
+### 常见组合示例
+
+**只加字段（Docker）：**
+
+```bash
+docker compose exec hyperf php bin/hyperf.php migrate
+```
+
+**新表 + Model + 后台接口（Docker）：**
+
+```bash
+docker compose exec hyperf php bin/hyperf.php migrate
+```
+
+**新菜单/初始配置（Docker）：**
+
+```bash
+docker compose exec hyperf php bin/hyperf.php migrate
+docker compose exec hyperf php bin/hyperf.php db:seed
+```
+
+**只改 `web/` 页面（dev 已启动）：** 保存即可，Vite 热更新，无必跑命令。
+
+---
+
+## 三、AI 收尾 checklist
+
+1. 有 schema/种子变更 → 已编辑 `databases/` 且列出 `migrate` / `db:seed`。
+2. 列出命令时标明 **Docker** 或 **本机**，不混用前缀。
+3. 不主动 `git commit` / `git push`，除非用户明确要求。
