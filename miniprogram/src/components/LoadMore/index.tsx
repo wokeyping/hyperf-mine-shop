@@ -1,5 +1,4 @@
 import { View, Text } from '@tarojs/components';
-import { Loading } from '@nutui/nutui-react-taro';
 import './index.scss';
 
 /** 0=idle, 1=loading, 2=noMore, 3=failed */
@@ -30,7 +29,7 @@ export default function LoadMore({
       {/* Loading */}
       {status === 1 && (
         <View className="load-more__loading">
-          <Loading className="load-more__spinner" />
+          <View className="load-more__spinner" />
           <Text className="load-more__loading-text">加载中...</Text>
         </View>
       )}
