@@ -1,0 +1,21 @@
+---
+description: 小程序 miniprogram/ Taro 约定
+globs: miniprogram/**/*.{tsx,ts}
+alwaysApply: false
+---
+
+# 小程序 (miniprogram/)
+
+- Taro + React 风格组件，对接 `app/Interface/Api/V1/`。
+- 业务编排走 `AppApi*` → `DomainApi*`，不在前端复刻后端规则。
+
+## 约定
+
+- API 调用走项目已有 `services/` 或 request 封装，统一错误与登录态处理。
+- 页面路径、分包与 `app.config` 保持一致；新页面参考同模块现有页（如 `pages/category/`）。
+- 价格、库存、订单状态等以服务端为准，前端仅展示与交互。
+
+## 不要
+
+- 在小程序端实现应付金额、优惠、库存扣减等核心计算。
+- 硬编码未在 `config/autoload/mall.php` 或接口中约定的魔法常量。

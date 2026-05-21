@@ -1,0 +1,30 @@
+---
+description: MineShop 项目概览与通用协作约定
+alwaysApply: true
+---
+
+# MineShop 项目概览
+
+基于 MineAdmin 的电商商城：PHP 8.2 + Hyperf 3.1 + Swoole，DDD 四层架构；管理端 `web/`（Vue 3 + Element Plus），小程序 `miniprogram/`（Taro）。开发阶段，勿假设生产已就绪。
+
+## 与用户沟通
+
+- 默认使用**简体中文**回复。
+- 引用代码用 ``startLine:endLine:filepath`` 格式，便于跳转。
+- 未明确要求时：不主动 `git commit`、不 `git push`、不扩大改动范围。
+
+## 常用命令
+
+```bash
+composer dev          # 后端热重载
+composer test         # 协程 PHPUnit
+composer cs-fix       # PHP CS Fixer
+composer analyse      # PHPStan level 5
+cd web && npm run dev # 管理端
+```
+
+## 改动原则
+
+- 最小可行 diff，匹配现有命名与分层。
+- 业务逻辑放在 Domain；Application 只做编排、事务、缓存、事件。
+- 详细 DDD 见 `docs/DDD-ARCHITECTURE.md`，命令与模块见根目录 `CLAUDE.md`。

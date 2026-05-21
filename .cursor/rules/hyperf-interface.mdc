@@ -1,0 +1,31 @@
+---
+description: Interface 层 Controller、路由与 Request
+globs: app/Interface/**/*.php
+alwaysApply: false
+---
+
+# Interface 层
+
+## 路由注解
+
+```php
+#[Controller(prefix: '/admin/user')]
+#[PostMapping(path: '')]
+#[PutMapping(path: '{id}')]
+```
+
+- 小程序 API：`#[AutoController(prefix: '/api/v1/...')]`，版本化路径。
+- 中间件：`#[Middleware]`，注意 priority 顺序。
+
+## Controller 职责
+
+- 接收请求 → 调用 Application Service → 返回统一响应结构。
+- 校验放在 `Request` 子类，通过 `toDto()` 产出 DTO。
+- **不要**在 Controller 写业务逻辑或直接访问 Repository。
+
+## Admin vs Api
+
+- `app/Interface/Admin/` — 后台管理，对接 `App*Service`
+- `app/Interface/Api/V1/` — 小程序，对接 `AppApi*Service`
+
+新增接口时：先定 Contract/DTO，再补 Application 与 Domain，最后 Controller + Request。

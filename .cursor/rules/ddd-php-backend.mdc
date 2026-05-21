@@ -1,0 +1,42 @@
+---
+description: Hyperf 后端 DDD 分层与命名规范
+globs: app/**/*.php
+alwaysApply: false
+---
+
+# DDD 后端规范
+
+## 调用链（禁止跳层）
+
+**后台：** `Controller → App*CommandService / App*QueryService → Domain*Service → Repository`
+
+**小程序 Api：** `Controller → AppApi*CommandService → DomainApi*CommandService → Repository`
+
+## 目录与职责
+
+| 层 | 路径 | 职责 |
+|----|------|------|
+| Interface | `app/Interface/Admin|Api/` | 路由、Request 校验、`Request::toDto()` |
+| Application | `app/Application/` | 事务、缓存清理、事件；**无业务规则** |
+| Domain | `app/Domain/{模块}/` | Service、Entity、Mapper、Repository、Contract、Vo |
+| Infrastructure | `app/Infrastructure/` | Model、外部集成、监听器 |
+
+## 命名前缀
+
+- Application 后台：`App` + `CommandService` / `QueryService`
+- Application 小程序：`AppApi`
+- Domain：`Domain` + `Service`；小程序领域：`DomainApi`
+
+## 实现要点
+
+1. DTO 实现 Domain 的 Contract（如 `UserInput`），Controller 只传 Contract/DTO。
+2. 简单 CRUD：Domain Service 用 `DTO::toArray()`，不必建 Entity。
+3. 复杂聚合：Entity + `markDirty()`，`toArray()` 仅含已改字段；`getEntity()` + `Mapper::fromModel()`。
+4. 异常用 `\DomainException`、`\RuntimeException`，不新增自定义领域异常类。
+5. 值对象类名以 `Vo` 结尾。
+
+## PHP 风格
+
+- 文件顶部：`declare(strict_types=1);`
+- PSR-12、单引号、导入字母序、无未使用 import
+- 新增类前先搜同模块现有实现，保持风格一致

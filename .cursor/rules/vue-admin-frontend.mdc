@@ -1,0 +1,21 @@
+---
+description: 管理端 web/ Vue 3 前端约定
+globs: web/**/*.{vue,ts,tsx}
+alwaysApply: false
+---
+
+# 管理端 (web/)
+
+- Vue 3 + Element Plus + Vite，ESLint 使用 Antfu 配置。
+- 开发：`cd web && npm run dev`；提交前：`npm run lint`（含 vue-tsc）。
+
+## 约定
+
+- 与后端 API 路径、字段名保持一致；改接口时同步查 `app/Interface/Admin/`。
+- 列表/表单逻辑优先复用现有 composable、API 封装与页面模式。
+- 类型定义与接口响应结构对齐，避免 `any` 敷衍。
+
+## 不要
+
+- 在页面组件内直接写裸 `fetch` 绕过项目 API 层（若已有封装）。
+- 为单一小改动引入新 UI 库或全局样式方案。
